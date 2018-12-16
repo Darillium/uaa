@@ -36,6 +36,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,7 +67,6 @@ import java.util.Map;
 
 import static org.cloudfoundry.identity.uaa.integration.util.IntegrationTestUtils.isMember;
 import static org.cloudfoundry.identity.uaa.oauth.token.ClaimConstants.SUB;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
 import static org.cloudfoundry.identity.uaa.provider.ExternalIdentityProviderDefinition.USER_NAME_ATTRIBUTE_NAME;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -269,6 +269,7 @@ public class OIDCLoginIT {
         ScimUser user = IntegrationTestUtils.getUserByZone(adminToken, baseUrl, subdomain, testAccounts.getUserName());
         assertEquals(user.getGivenName(), user.getUserName());
 
+        //TODO the tostring of user authorities when creating shadow user seems to be broken, check out ScimUserBootstrap.createNewUser()
         ScimGroup updatedCreatedGroup = IntegrationTestUtils.getGroup(adminToken, subdomain, baseUrl, createdGroup.getDisplayName());
         assertTrue(isMember(user.getId(), updatedCreatedGroup));
     }
@@ -337,7 +338,7 @@ public class OIDCLoginIT {
         serverRunning.setHostName("localhost");
 
         String clientId = "client" + new RandomValueStringGenerator(5).generate();
-        BaseClientDetails client = new BaseClientDetails(clientId, null, "openid", GRANT_TYPE_AUTHORIZATION_CODE, "openid", baseUrl);
+        BaseClientDetails client = new BaseClientDetails(clientId, null, "openid", "authorization_code", "openid", baseUrl);
         client.setClientSecret("clientsecret");
         client.setAutoApproveScopes(Collections.singletonList("true"));
         IntegrationTestUtils.createClient(adminToken, baseUrl, client);
@@ -460,6 +461,32 @@ public class OIDCLoginIT {
 
         assertThat(webDriver.getCurrentUrl(), containsString("error=invalid_request"));
         assertThat(webDriver.getCurrentUrl(), containsString("error_description=Missing%20response_type%20in%20authorization%20request"));
+    }
+
+    @Test
+    @Ignore("We don't have an azure provider pointint to http://oidcloginit.localhost:8080/uaa anymore")
+    public void successful_Azure_Login() throws Exception {
+        String userName = "jondoe@cfuaa.onmicrosoft.com";
+        String password = "Cona41591";
+        OIDCIdentityProviderDefinition azureConfig = azureConfig();
+        azureConfig.setLinkText("Test Azure Provider");
+        azureConfig.setShowLinkText(true);
+        identityProvider.setConfig(azureConfig);
+        updateProvider();
+
+        webDriver.get(zoneUrl);
+
+        webDriver.findElement(By.linkText("Test Azure Provider")).click();
+        String url = "login.microsoftonline.com/9bc40aaf-e150-4c30-bb3c-a8b3b677266e/oauth2/authorize";
+        Assert.assertThat(webDriver.getCurrentUrl(), containsString(url));
+
+        webDriver.findElement(By.name("login")).sendKeys(userName);
+        webDriver.findElement(By.name("passwd")).sendKeys(password);
+        webDriver.findElement(By.name("passwd")).submit();
+
+        Thread.sleep(500);
+        Assert.assertThat(webDriver.getCurrentUrl(), containsString(zoneUrl));
+        assertThat(webDriver.findElement(By.cssSelector("h1")).getText(), containsString("Where to?"));
     }
 
 

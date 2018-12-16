@@ -18,46 +18,48 @@ package org.cloudfoundry.identity.uaa.cache;
 import com.google.common.base.Ticker;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.identity.uaa.util.TimeService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 public class ExpiringUrlCache implements UrlContentCache {
-    private static final Logger logger = LoggerFactory.getLogger(ExpiringUrlCache.class);
 
-    private final Duration cacheExpiration;
-    private final TimeService timeService;
-    private final Cache<String, CacheEntry> cache;
+    private static Log logger = LogFactory.getLog(ExpiringUrlCache.class);
 
-    public ExpiringUrlCache(Duration cacheExpiration, TimeService timeService, int maxEntries) {
-        this.cacheExpiration = cacheExpiration;
-        this.timeService = timeService;
+    private final long expiringTimeMillis;
+    private final int maxEntries;
+    private final TimeService ticker;
+    protected Cache<String, CacheEntry> cache = null;
+
+    public ExpiringUrlCache(long expiringTimeMillis, TimeService ticker, int maxEntries) {
+        this.expiringTimeMillis = expiringTimeMillis;
+        this.ticker = ticker;
+        this.maxEntries = maxEntries;
         cache = CacheBuilder
-                .newBuilder()
-                .expireAfterWrite(this.cacheExpiration.toMillis(), TimeUnit.MILLISECONDS)
-                .maximumSize(maxEntries)
-                .ticker(Ticker.systemTicker())
-                .build();
+            .newBuilder()
+            .expireAfterWrite(expiringTimeMillis, TimeUnit.MILLISECONDS)
+            .maximumSize(maxEntries)
+            .ticker(Ticker.systemTicker())
+            .build();
     }
+
 
     @Override
     public byte[] getUrlContent(String uri, final RestTemplate template) {
         try {
             final URI netUri = new URI(uri);
             CacheEntry entry = cache.getIfPresent(uri);
-            byte[] metadata = entry != null ? entry.data : null;
-            if (metadata == null || isEntryExpired(entry)) {
+            byte[] metadata = entry != null ? entry.getData() : null;
+            long now = ticker.getCurrentTimeMillis();
+            if (metadata == null || (now - entry.getTimeEntered()) > this.expiringTimeMillis) {
                 logger.debug("Fetching metadata for "+uri);
                 metadata = template.getForObject(netUri, byte[].class);
-                Instant now = Instant.ofEpochMilli(timeService.getCurrentTimeMillis());
                 cache.put(uri, new CacheEntry(now, metadata));
             }
             return metadata;
@@ -67,11 +69,6 @@ public class ExpiringUrlCache implements UrlContentCache {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    private boolean isEntryExpired(CacheEntry entry) {
-        Instant now = Instant.ofEpochMilli(timeService.getCurrentTimeMillis());
-        return Duration.between(entry.timeEntered, now).compareTo(cacheExpiration) > 0;
     }
 
     @Override
@@ -85,12 +82,21 @@ public class ExpiringUrlCache implements UrlContentCache {
     }
 
     static class CacheEntry {
-        final Instant timeEntered;
-        final byte[] data;
+        private final long timeEntered;
+        private final byte[] data;
 
-        CacheEntry(Instant timeEntered, byte[] data) {
+        public CacheEntry(long timeEntered, byte[] data) {
             this.timeEntered = timeEntered;
             this.data = data;
         }
+
+        public long getTimeEntered() {
+            return timeEntered;
+        }
+
+        public byte[] getData() {
+            return data;
+        }
+
     }
 }

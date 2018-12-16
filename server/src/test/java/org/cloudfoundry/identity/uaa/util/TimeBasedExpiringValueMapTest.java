@@ -40,7 +40,7 @@ public class TimeBasedExpiringValueMapTest {
 
     public static final int TIMEOUT = 50;
     private MockTimeService timeService = new MockTimeService();
-    private TimeBasedExpiringValueMap<String, Object> map;
+    private TimeBasedExpiringValueMap<String,Object> map;
     private RandomValueStringGenerator generator = new RandomValueStringGenerator();
     private String key1 = generator.generate(), key2 = generator.generate();
     private Object value1 = new Object(), value2 = new Object();
@@ -51,18 +51,18 @@ public class TimeBasedExpiringValueMapTest {
     }
 
     @Test
-    public void no_value() {
+    public void no_value() throws Exception {
         assertNull(map.get(generator.generate()));
     }
 
     @Test
-    public void put_then_get() {
+    public void put_then_get() throws Exception {
         map.put(key1, value1);
         assertSame(value1, map.get(key1));
     }
 
     @Test
-    public void clear() {
+    public void clear() throws Exception {
         map.put(key1, value1);
         assertNotNull(map.get(key1));
         assertEquals(1, map.size());
@@ -72,9 +72,9 @@ public class TimeBasedExpiringValueMapTest {
     }
 
     @Test
-    public void expire_on_get() {
+    public void expire_on_get() throws Exception {
         map.put(key1, value1);
-        timeService.addAndGet(TIMEOUT * 2);
+        timeService.addAndGet(TIMEOUT*2);
         assertEquals(1, map.size());
         assertSame(value1, map.get(key1));
         assertEquals(0, map.size());
@@ -82,58 +82,58 @@ public class TimeBasedExpiringValueMapTest {
     }
 
     @Test
-    public void expire_on_put() {
+    public void expire_on_put() throws Exception {
         map.put(key1, value1);
         assertEquals(1, map.size());
-        timeService.addAndGet(TIMEOUT * 2);
+        timeService.addAndGet(TIMEOUT*2);
         map.put(key2, value2);
         assertEquals(1, map.size());
     }
 
     @Test
-    public void remove() {
+    public void remove() throws Exception {
         map.put(key1, value1);
         assertSame(value1, map.remove(key1));
         assertEquals(0, map.size());
     }
 
     @Test
-    public void non_existent_remove() {
+    public void non_existent_remove() throws Exception {
         assertNull(map.remove("does-not-exist"));
     }
 
     @Test
     public void concurrency_test() throws Exception {
-        TimeServiceImpl timeService = mock(TimeServiceImpl.class);
-        when(timeService.getCurrentTimeMillis()).thenReturn(1L);
-
-        map = new TimeBasedExpiringValueMap<>(timeService, 0);
+        map = new TimeBasedExpiringValueMap<>(new TimeServiceImpl(), TIMEOUT);
         RandomValueStringGenerator randomValueStringGenerator = new RandomValueStringGenerator(1);
+        int count = 10, loops = 1000000;
 
-        Thread[] threads = new Thread[2];
-        for (int i = 0; i < threads.length; i++) {
+        Thread[] threads = new Thread[count];
+        for (int i=0; i<threads.length; i++) {
             threads[i] = new Thread(() -> {
-                String key = randomValueStringGenerator.generate().toLowerCase();
-                Object value = new Object();
-                map.put(key, value);
-                assertNotNull(map.get(key));
+                for (int j=0; j<loops; j++) {
+                    String key = randomValueStringGenerator.generate().toLowerCase();
+                    Object value = new Object();
+                    map.put(key, value);
+                    assertNotNull(map.get(key));
+                }
             });
         }
-        for (int i = 0; i < threads.length; i++) {
+        for (int i=0; i<threads.length; i++) {
             threads[i].start();
         }
-        for (int i = 0; i < threads.length; i++) {
+        for (int i=0; i<threads.length; i++) {
             threads[i].join();
         }
         assertThat(map.size(), greaterThan(0));
-
-        when(timeService.getCurrentTimeMillis()).thenReturn(Long.MAX_VALUE);
+        Thread.sleep(TIMEOUT*2);
+        assertThat(map.size(), greaterThan(0));
         map.get("random-key");
         assertEquals(0, map.size());
     }
 
     @Test
-    public void avoid_npe_during_remove() {
+    public void avoid_npe_during_remove() throws Exception {
         map = new TimeBasedExpiringValueMap<>(new TimeServiceImpl(), TIMEOUT);
         ConcurrentMap internalMap = mock(ConcurrentMap.class);
         TimedKeyValue<String, Object> value = new TimedKeyValue<>(0, "test", new Object());

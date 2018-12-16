@@ -296,7 +296,7 @@ public class AuditCheckMockMvcTests extends InjectedMockContextTest {
 
 
     @Test
-    public void invalidPasswordLoginUnsuccessfulTest() throws Exception {
+    public void invalidPasswordLoginFailedTest() throws Exception {
         MockHttpSession session = new MockHttpSession();
         MockHttpServletRequestBuilder loginPost = post("/login.do")
             .with(cookieCsrf())
@@ -466,7 +466,7 @@ public class AuditCheckMockMvcTests extends InjectedMockContextTest {
     }
 
     @Test
-    public void userNotFoundLoginUnsuccessfulTest() throws Exception {
+    public void userNotFoundLoginFailedTest() throws Exception {
         String username = "test1234";
 
         MockHttpSession session = new MockHttpSession();

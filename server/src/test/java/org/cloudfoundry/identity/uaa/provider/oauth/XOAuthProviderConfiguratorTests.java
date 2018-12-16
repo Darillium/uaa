@@ -25,12 +25,14 @@ import org.cloudfoundry.identity.uaa.provider.SlowHttpServer;
 import org.cloudfoundry.identity.uaa.util.UaaUrlUtils;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.UnsupportedEncodingException;
@@ -52,9 +54,10 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -140,6 +143,8 @@ public class XOAuthProviderConfiguratorTests {
     private IdentityProviderProvisioning provisioning;
     private IdentityProvider<OIDCIdentityProviderDefinition> oidcProvider;
     private IdentityProvider<RawXOAuthIdentityProviderDefinition> oauthProvider;
+    private Runnable stopHttpServer;
+    private SlowHttpServer slowHttpServer;
 
     @Before
     public void setup() throws MalformedURLException {
@@ -169,7 +174,7 @@ public class XOAuthProviderConfiguratorTests {
         redirectUri = URLEncoder.encode("https://localhost:8443/uaa/login/callback/alias");
         provisioning = mock(IdentityProviderProvisioning.class);
         cache = mock(UrlContentCache.class);
-        when(cache.getUrlContent(anyString(), any())).thenReturn(jsonResponse.getBytes());
+        when(cache.getUrlContent(anyString(), anyObject())).thenReturn(jsonResponse.getBytes());
         trustingRestTemplate = mock(RestTemplate.class);
         nonTrustingRestTemplate = mock(RestTemplate.class);
 
@@ -261,7 +266,7 @@ public class XOAuthProviderConfiguratorTests {
 
         reset(configurator);
         assertNotNull(configurator.retrieveByOrigin(OAUTH20, IdentityZone.getUaa().getId()));
-        verify(configurator, never()).overlay(any());
+        verify(configurator, never()).overlay(anyObject());
     }
 
     @Test
@@ -274,7 +279,7 @@ public class XOAuthProviderConfiguratorTests {
 
         reset(configurator);
         assertNotNull(configurator.retrieve(OAUTH20, "id"));
-        verify(configurator, never()).overlay(any());
+        verify(configurator, never()).overlay(anyObject());
     }
 
     @Test
@@ -344,7 +349,6 @@ public class XOAuthProviderConfiguratorTests {
     }
 
 
-
     @Test
     public void getCompleteAuthorizationURI_includesNonceOnOIDC() throws UnsupportedEncodingException {
         String expected = String.format(baseExpect, oidc.getRelyingPartyId(), URLEncoder.encode("id_token code"), redirectUri, URLEncoder.encode("openid password.write"), "&nonce=");
@@ -368,7 +372,7 @@ public class XOAuthProviderConfiguratorTests {
 
     @Test
     public void excludeUnreachableOidcProvider() {
-        when(cache.getUrlContent(anyString(), any())).thenReturn(null);
+        when(cache.getUrlContent(anyString(), anyObject())).thenReturn(null);
 
         List<IdentityProvider> providers = configurator.retrieveAll(true, IdentityZone.getUaa().getId());
         assertEquals(1, providers.size());

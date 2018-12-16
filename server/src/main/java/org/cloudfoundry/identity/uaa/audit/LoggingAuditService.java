@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Audit service implementation which just outputs the relevant information
  * through the logger.
+ * <p>
+ * Also accumulates count data for exposure through /varz
  *
  * @author Luke Taylor
  * @author Dave Syer

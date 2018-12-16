@@ -29,14 +29,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-public final class CompositeAccessTokenDeserializer extends StdDeserializer<CompositeToken> {
+public final class CompositeAccessTokenDeserializer extends StdDeserializer<CompositeAccessToken> {
 
     public CompositeAccessTokenDeserializer() {
-        super(CompositeToken.class);
+        super(CompositeAccessToken.class);
     }
 
     @Override
-    public CompositeToken deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+    public CompositeAccessToken deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
 
         String idTokenValue = null;
         String tokenValue = null;
@@ -46,12 +46,13 @@ public final class CompositeAccessTokenDeserializer extends StdDeserializer<Comp
         Set<String> scope = null;
         Map<String, Object> additionalInformation = new LinkedHashMap<String, Object>();
 
+        // TODO What should occur if a parameter exists twice
         while (jp.nextToken() != JsonToken.END_OBJECT) {
             String name = jp.getCurrentName();
             jp.nextToken();
             if (OAuth2AccessToken.ACCESS_TOKEN.equals(name)) {
                 tokenValue = jp.getText();
-            } else if (CompositeToken.ID_TOKEN.equals(name)) {
+            } else if (CompositeAccessToken.ID_TOKEN.equals(name)) {
                 idTokenValue = jp.getText();
             } else if (OAuth2AccessToken.TOKEN_TYPE.equals(name)) {
                 tokenType = jp.getText();
@@ -71,7 +72,9 @@ public final class CompositeAccessTokenDeserializer extends StdDeserializer<Comp
             }
         }
 
-        CompositeToken accessToken = new CompositeToken(tokenValue);
+        // TODO What should occur if a required parameter (tokenValue or tokenType) is missing?
+
+        CompositeAccessToken accessToken = new CompositeAccessToken(tokenValue);
         accessToken.setIdTokenValue(idTokenValue);
         accessToken.setTokenType(tokenType);
         if (expiresIn != null) {

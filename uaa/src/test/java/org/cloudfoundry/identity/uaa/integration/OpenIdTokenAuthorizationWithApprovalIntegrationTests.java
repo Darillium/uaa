@@ -58,7 +58,6 @@ import java.util.Set;
 
 import static org.cloudfoundry.identity.uaa.integration.util.IntegrationTestUtils.extractCookieCsrf;
 import static org.cloudfoundry.identity.uaa.integration.util.IntegrationTestUtils.getHeaders;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
 import static org.cloudfoundry.identity.uaa.security.web.CookieBasedCsrfTokenRepository.DEFAULT_CSRF_COOKIE_NAME;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -305,6 +304,7 @@ public class OpenIdTokenAuthorizationWithApprovalIntegrationTests {
     private void doOpenIdHybridFlowForLoginClient(Set<String> responseTypes, String responseTypeMatcher) throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
+        // TODO: should be able to handle just TEXT_HTML
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.ALL));
 
         AuthorizationCodeResourceDetails resource = testAccounts.getDefaultAuthorizationCodeResource();
@@ -350,7 +350,7 @@ public class OpenIdTokenAuthorizationWithApprovalIntegrationTests {
         formData.clear();
         formData.add("client_id", clientId);
         formData.add("redirect_uri", redirectUri);
-        formData.add("grant_type", GRANT_TYPE_AUTHORIZATION_CODE);
+        formData.add("grant_type", "authorization_code");
         formData.add("code", value);
         HttpHeaders tokenHeaders = new HttpHeaders();
         tokenHeaders.set("Authorization",

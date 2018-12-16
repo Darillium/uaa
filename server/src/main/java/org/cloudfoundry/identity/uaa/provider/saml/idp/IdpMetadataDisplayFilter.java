@@ -15,6 +15,8 @@
 package org.cloudfoundry.identity.uaa.provider.saml.idp;
 
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.opensaml.saml2.metadata.provider.MetadataProviderException;
+import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.metadata.MetadataDisplayFilter;
 
 import javax.servlet.ServletException;

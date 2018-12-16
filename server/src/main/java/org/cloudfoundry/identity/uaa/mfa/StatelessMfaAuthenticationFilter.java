@@ -14,10 +14,19 @@
 
 package org.cloudfoundry.identity.uaa.mfa;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthentication;
 import org.cloudfoundry.identity.uaa.authentication.event.MfaAuthenticationFailureEvent;
 import org.cloudfoundry.identity.uaa.authentication.event.MfaAuthenticationSuccessEvent;
-import org.cloudfoundry.identity.uaa.authentication.manager.CommonLoginPolicy;
+import org.cloudfoundry.identity.uaa.authentication.event.UserAuthenticationFailureEvent;
 import org.cloudfoundry.identity.uaa.mfa.exception.InvalidMfaCodeException;
 import org.cloudfoundry.identity.uaa.mfa.exception.MissingMfaCodeException;
 import org.cloudfoundry.identity.uaa.mfa.exception.UserMfaConfigDoesNotExistException;
@@ -26,6 +35,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -40,15 +50,6 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.GRANT_TYPE;
 
 public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter implements ApplicationEventPublisherAware {
@@ -57,21 +58,17 @@ public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter imple
     private final Set<String> supportedGrantTypes;
     private final MfaProviderProvisioning mfaProvider;
     private final UaaUserDatabase userDb;
-    private final CommonLoginPolicy commonLoginPolicy;
-
     private ApplicationEventPublisher publisher;
 
     public StatelessMfaAuthenticationFilter(UserGoogleMfaCredentialsProvisioning provisioning,
                                             Set<String> supportedGrantTypes,
                                             MfaProviderProvisioning mfaProvider,
-                                            UaaUserDatabase userDb,
-                                            CommonLoginPolicy commonLoginPolicy) {
+                                            UaaUserDatabase userDb) {
         this.provisioning = provisioning;
         this.supportedGrantTypes = supportedGrantTypes;
         this.mfaProvider = mfaProvider;
         this.userDb = userDb;
-        this.commonLoginPolicy = commonLoginPolicy;
-}
+    }
 
     public boolean isGrantTypeSupported(String type) {
         return supportedGrantTypes.contains(type);
@@ -79,7 +76,7 @@ public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter imple
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
+        throws ServletException, IOException {
         MfaProvider provider = null;
         try {
             if (isGrantTypeSupported(request.getParameter(GRANT_TYPE))) {
@@ -94,11 +91,13 @@ public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter imple
             handleException(new JsonError(400, "invalid_request", x.getMessage()), response);
         } catch (MissingMfaCodeException | UserMfaConfigDoesNotExistException e) {
             UaaUser user = getUaaUser();
-            publishEvent(new MfaAuthenticationFailureEvent(user, getAuthentication(), provider != null ? provider.getType().toValue() : "null"));
+            publishEvent(new MfaAuthenticationFailureEvent(user, getAuthentication(), provider!=null? provider.getType().toValue() : "null"));
+            publishEvent(new UserAuthenticationFailureEvent(user, getAuthentication()));
             handleException(new JsonError(400, "invalid_request", e.getMessage()), response);
         } catch (InvalidMfaCodeException e) {
             UaaUser user = getUaaUser();
-            publishEvent(new MfaAuthenticationFailureEvent(user, getAuthentication(), provider != null ? provider.getType().toValue() : "null"));
+            publishEvent(new MfaAuthenticationFailureEvent(user, getAuthentication(), provider!=null? provider.getType().toValue() : "null"));
+            publishEvent(new UserAuthenticationFailureEvent(user, getAuthentication()));
             handleException(new JsonError(401, "unauthorized", "Bad credentials"), response);
         }
     }
@@ -109,20 +108,16 @@ public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter imple
         response.getWriter().write(JsonUtils.writeValueAsString(error));
     }
 
-    protected MfaProvider checkMfaCode(HttpServletRequest request) {
+    protected MfaProvider checkMfaCode(HttpServletRequest request)
+        throws ServletException, IOException {
         IdentityZone zone = IdentityZoneHolder.get();
         MfaProvider provider = null;
         UaaAuthentication authentication = getAuthentication();
-
         if (isMfaEnabled(zone)) {
-            if (!commonLoginPolicy.isAllowed(authentication.getPrincipal().getId()).isAllowed()) {
-                throw new RuntimeException();
-            }
-
             try {
                 provider = mfaProvider.retrieveByName(zone.getConfig().getMfaConfig().getProviderName(), zone.getId());
             } catch (EmptyResultDataAccessException x) {
-                throw new ProviderNotFoundException("Unable to find MFA provider for zone:" + zone.getSubdomain());
+                throw new ProviderNotFoundException("Unable to find MFA provider for zone:"+zone.getSubdomain());
             }
             Integer code = getMfaCode(request);
             UserGoogleMfaCredentials credentials = provisioning.getUserGoogleMfaCredentials(authentication.getPrincipal().getId(), provider.getId());
@@ -141,7 +136,7 @@ public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter imple
     }
 
     private void publishEvent(ApplicationEvent event) {
-        if (publisher != null) {
+        if (publisher!=null) {
             publisher.publishEvent(event);
         }
     }
@@ -170,14 +165,14 @@ public class StatelessMfaAuthenticationFilter extends OncePerRequestFilter imple
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) {
             throw new InsufficientAuthenticationException("User authentication missing");
-        } else if (!(auth instanceof OAuth2Authentication)) {
+        } else if (! (auth instanceof OAuth2Authentication)) {
             throw new InsufficientAuthenticationException("Unrecognizable authentication");
         }
-        Authentication userAuth = ((OAuth2Authentication) auth).getUserAuthentication();
-        if (!(userAuth instanceof UaaAuthentication)) {
+        Authentication userAuth = ((OAuth2Authentication)auth).getUserAuthentication();
+        if (! (userAuth instanceof UaaAuthentication)) {
             throw new InsufficientAuthenticationException("Unrecognizable user authentication");
         }
-        return (UaaAuthentication) userAuth;
+        return (UaaAuthentication)userAuth;
     }
 
     public Set<String> getSupportedGrantTypes() {

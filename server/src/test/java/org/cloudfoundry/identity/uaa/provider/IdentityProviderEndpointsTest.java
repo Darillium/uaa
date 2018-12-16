@@ -9,6 +9,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +32,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -160,7 +161,7 @@ public class IdentityProviderEndpointsTest {
     public void remove_bind_password() throws Exception {
         remove_sensitive_data(() -> getLdapDefinition(),
                               LDAP,
-                              (spy) -> verify((LdapIdentityProviderDefinition)spy, times(1)).setBindPassword(isNull()));
+                              (spy) -> verify((LdapIdentityProviderDefinition)spy, times(1)).setBindPassword(Matchers.isNull(String.class)));
     }
 
     @Test
@@ -168,7 +169,7 @@ public class IdentityProviderEndpointsTest {
         for (String type : Arrays.asList(OIDC10, OAUTH20)) {
             remove_sensitive_data(() -> getXOAuthProvider(),
                                   type,
-                                  (spy) -> verify((AbstractXOAuthIdentityProviderDefinition)spy, times(1)).setRelyingPartySecret(isNull()));
+                                  (spy) -> verify((AbstractXOAuthIdentityProviderDefinition)spy, times(1)).setRelyingPartySecret(Matchers.isNull(String.class)));
         }
     }
 
@@ -189,7 +190,7 @@ public class IdentityProviderEndpointsTest {
         provider.setConfig(spy);
         provider.setType(UNKNOWN);
         identityProviderEndpoints.redactSensitiveData(provider);
-        verify(spy, never()).setRelyingPartySecret(isNull());
+        verify(spy, never()).setRelyingPartySecret(Matchers.isNull(String.class));
     }
 
     @Test
@@ -199,7 +200,7 @@ public class IdentityProviderEndpointsTest {
         provider.setConfig(spy);
         provider.setType(OriginKeys.UNKNOWN);
         identityProviderEndpoints.redactSensitiveData(provider);
-        verify(spy, never()).setBindPassword(isNull());
+        verify(spy, never()).setBindPassword(Matchers.isNull(String.class));
     }
 
     @Test
@@ -240,7 +241,7 @@ public class IdentityProviderEndpointsTest {
         provider.setConfig(spy);
         provider.setType(OriginKeys.UNKNOWN);
         identityProviderEndpoints.redactSensitiveData(provider);
-        verify(spy, never()).setBindPassword(any());
+        verify(spy, never()).setBindPassword(anyObject());
     }
 
     @Test
@@ -337,7 +338,7 @@ public class IdentityProviderEndpointsTest {
             IdentityProvider<AbstractXOAuthIdentityProviderDefinition> xoauthDefinition = getXOAuthProvider();
             assertNotNull(xoauthDefinition.getConfig().getRelyingPartySecret());
             xoauthDefinition.setType(type);
-            when(identityProviderProvisioning.create(any(), eq(zoneId))).thenReturn(xoauthDefinition);
+            when(identityProviderProvisioning.create(anyObject(), eq(zoneId))).thenReturn(xoauthDefinition);
             ResponseEntity<IdentityProvider> response = identityProviderEndpoints.createIdentityProvider(xoauthDefinition, true);
             IdentityProvider created = response.getBody();
             assertNotNull(created);

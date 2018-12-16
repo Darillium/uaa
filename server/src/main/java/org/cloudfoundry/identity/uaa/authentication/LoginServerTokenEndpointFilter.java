@@ -31,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_PASSWORD;
-
 public class LoginServerTokenEndpointFilter extends TokenEndpointAuthenticationFilter {
 
 
@@ -57,7 +55,7 @@ public class LoginServerTokenEndpointFilter extends TokenEndpointAuthenticationF
     @Override
     protected Authentication extractCredentials(HttpServletRequest request) {
         String grantType = request.getParameter("grant_type");
-        if (grantType != null && grantType.equals(GRANT_TYPE_PASSWORD)) {
+        if (grantType != null && grantType.equals("password")) {
             Map<String,String> loginInfo = new HashMap<>();
             for (String p : parameterNames) {
                 String value = request.getParameter(p);

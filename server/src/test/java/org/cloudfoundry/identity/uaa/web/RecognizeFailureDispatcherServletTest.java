@@ -28,7 +28,7 @@ import org.springframework.web.servlet.DispatcherServlet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,25 +51,25 @@ public class RecognizeFailureDispatcherServletTest {
 
     @Test
     public void service_when_failure() throws Exception {
-        Mockito.doThrow(new RuntimeException("some app error", new SQLException("db error"))).when(delegate).init(any());
+        Mockito.doThrow(new RuntimeException("some app error", new SQLException("db error"))).when(delegate).init(anyObject());
         servlet.setDelegate(delegate);
         servlet.init(mock(ServletConfig.class));
         servlet.service(request, response);
         assertEquals(HttpServletResponse.SC_SERVICE_UNAVAILABLE, response.getStatus());
-        verify(delegate, times(1)).init(any());
-        verify(delegate, times(0)).service(any(), any());
+        verify(delegate, times(1)).init(anyObject());
+        verify(delegate, times(0)).service(anyObject(), anyObject());
         assertNotNull(response.getHeader(RecognizeFailureDispatcherServlet.HEADER));
         assertEquals(RecognizeFailureDispatcherServlet.HEADER_MSG, response.getHeader(RecognizeFailureDispatcherServlet.HEADER));
     }
     @Test
     public void service_when_ok() throws Exception {
         DispatcherServlet delegate = mock(DispatcherServlet.class);
-        Mockito.doNothing().when(delegate).init(any());
+        Mockito.doNothing().when(delegate).init(anyObject());
         servlet.setDelegate(delegate);
         servlet.init(mock(ServletConfig.class));
         servlet.service(request, response);
-        verify(delegate, times(1)).init(any());
-        verify(delegate, times(1)).service(any(), any());
+        verify(delegate, times(1)).init(anyObject());
+        verify(delegate, times(1)).service(anyObject(), anyObject());
     }
 
 

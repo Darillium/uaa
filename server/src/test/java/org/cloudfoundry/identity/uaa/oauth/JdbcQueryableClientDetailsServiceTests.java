@@ -13,6 +13,7 @@
 package org.cloudfoundry.identity.uaa.oauth;
 
 import org.cloudfoundry.identity.uaa.client.JdbcQueryableClientDetailsService;
+import org.cloudfoundry.identity.uaa.zone.JdbcIdentityZoneProvisioning;
 import org.cloudfoundry.identity.uaa.resources.jdbc.JdbcPagingListFactory;
 import org.cloudfoundry.identity.uaa.resources.jdbc.LimitSqlAdapter;
 import org.cloudfoundry.identity.uaa.test.JdbcTestBase;
@@ -20,7 +21,6 @@ import org.cloudfoundry.identity.uaa.zone.*;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
 import static org.junit.Assert.assertEquals;
 
 public class JdbcQueryableClientDetailsServiceTests extends JdbcTestBase {
@@ -33,9 +33,7 @@ public class JdbcQueryableClientDetailsServiceTests extends JdbcTestBase {
     private MultitenantJdbcClientDetailsService delegate;
 
     @Before
-    public void initJdbcScimClientDetailsServiceTests() {
-        cleanData();
-
+    public void initJdbcScimClientDetailsServiceTests() throws Exception {
         IdentityZoneHolder.clear();
 
         limitSqlAdapter = webApplicationContext.getBean(LimitSqlAdapter.class);
@@ -54,7 +52,7 @@ public class JdbcQueryableClientDetailsServiceTests extends JdbcTestBase {
                 "myRedirectUri", "scim.read,scim.write", 100, 200);
         addClient("admin", "secret", "tokens,clients", "clients.read,clients.write,scim.read,scim.write",
                 "client_credentials", "myRedirectUri", "clients.read,clients.write,scim.read,scim.write", 100, 200);
-        addClient("app", "secret", "cc", "cc.read,scim.read,openid", GRANT_TYPE_AUTHORIZATION_CODE, "myRedirectUri",
+        addClient("app", "secret", "cc", "cc.read,scim.read,openid", "authorization_code", "myRedirectUri",
                 "cc.read,scim.read,openid", 100, 500);
     }
 
@@ -65,21 +63,21 @@ public class JdbcQueryableClientDetailsServiceTests extends JdbcTestBase {
     }
 
     @Test
-    public void testQueryEquals() {
+    public void testQueryEquals() throws Exception {
         addClients();
         assertEquals(4, service.retrieveAll(IdentityZoneHolder.get().getId()).size());
         assertEquals(2, service.query("authorized_grant_types eq \"client_credentials\"", IdentityZoneHolder.get().getId()).size());
     }
 
     @Test
-    public void testQueryExists() {
+    public void testQueryExists() throws Exception {
         addClients();
         assertEquals(4, service.retrieveAll(IdentityZoneHolder.get().getId()).size());
         assertEquals(4, service.query("scope pr", IdentityZoneHolder.get().getId()).size());
     }
 
     @Test
-    public void testQueryEqualsInAnotherZone() {
+    public void testQueryEqualsInAnotherZone() throws Exception {
         testQueryEquals();
         IdentityZoneHolder.set(otherZone);
         testQueryEquals();
@@ -87,7 +85,7 @@ public class JdbcQueryableClientDetailsServiceTests extends JdbcTestBase {
     }
 
     @Test
-    public void testQueryExistsInAnotherZone() {
+    public void testQueryExistsInAnotherZone() throws Exception {
         testQueryExists();
         IdentityZoneHolder.set(otherZone);
         testQueryExists();

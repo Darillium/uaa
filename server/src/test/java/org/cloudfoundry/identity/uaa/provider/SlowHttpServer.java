@@ -12,21 +12,21 @@ import java.io.IOException;
 import java.util.Date;
 
 public class SlowHttpServer {
-    private static final int PORT = 23439;
+    public static final int PORT = 23439;
     private final Runnable serverRunner;
     private HttpServer httpServer;
 
     public SlowHttpServer() {
-            serverRunner = () -> {
-                try {
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setContentType(MediaType.APPLICATION_JSON);
-                    File keystore = NetworkTestUtils.getKeystore(new Date(), 10);
-                    httpServer = NetworkTestUtils.startHttpsServer(PORT, keystore, NetworkTestUtils.keyPass, new SlowSimpleHttpResponseHandler());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            };
+         serverRunner = () -> {
+            try {
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                File keystore = NetworkTestUtils.getKeystore(new Date(), 10);
+                httpServer = NetworkTestUtils.startHttpsServer(PORT, keystore, NetworkTestUtils.keyPass, new SlowSimpleHttpResponseHandler());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        };
     }
 
     public void run() {
@@ -40,17 +40,16 @@ public class SlowHttpServer {
     }
 
     private static class SlowSimpleHttpResponseHandler implements HttpHandler {
+        SlowSimpleHttpResponseHandler() {
+        }
+
         @Override
-        public void handle(HttpExchange httpExchange) {
+        public void handle(HttpExchange httpExchange) throws IOException {
             try {
                 Thread.sleep(Integer.MAX_VALUE);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-    }
-
-    public String getUrl() {
-        return "https://localhost:" + PORT;
     }
 }

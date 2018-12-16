@@ -16,6 +16,7 @@
 package org.cloudfoundry.identity.uaa.resources.jdbc;
 
 import com.unboundid.scim.sdk.InvalidResourceException;
+import com.unboundid.scim.sdk.SCIMFilter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,7 +24,10 @@ import org.junit.rules.ExpectedException;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -71,6 +75,12 @@ public class SimpleSearchQueryConverterTests {
         exception.expectMessage(containsString("1"));
         exception.expectMessage(containsString("\"1\""));
         converter.scimFilter(query);
+    }
+
+    @Test
+    public void print_query() throws Exception {
+        SCIMFilter filter = converter.scimFilter(validQuery);
+        printFilterAttributes(filter, new AtomicInteger(0));
     }
 
     @Test
@@ -135,4 +145,18 @@ public class SimpleSearchQueryConverterTests {
             }
         }
     }
+
+    public void printFilterAttributes(SCIMFilter filter, AtomicInteger pos) {
+        if (filter.getFilterAttribute() != null) {
+            String name = filter.getFilterAttribute().getAttributeName();
+            if (filter.getFilterAttribute().getSubAttributeName() != null) {
+                name = name + "." + filter.getFilterAttribute().getSubAttributeName();
+            }
+            System.out.println((pos.incrementAndGet()) + ". Attribute name:" + name);
+        }
+        for (SCIMFilter subfilter : ofNullable(filter.getFilterComponents()).orElse(emptyList())) {
+            printFilterAttributes(subfilter, pos);
+        }
+    }
+
 }

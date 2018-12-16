@@ -44,7 +44,7 @@ public class JwtAlgorithms {
 
     }
 
-    public static String sigAlg(String javaName){
+    static String sigAlg(String javaName){
         String alg = javaToSigAlgs.get(javaName);
 
         if (alg == null) {

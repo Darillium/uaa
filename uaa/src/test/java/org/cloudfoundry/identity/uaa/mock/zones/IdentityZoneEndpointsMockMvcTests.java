@@ -77,7 +77,6 @@ import java.util.stream.Collectors;
 import static org.cloudfoundry.identity.uaa.constants.OriginKeys.LOGIN_SERVER;
 import static org.cloudfoundry.identity.uaa.constants.OriginKeys.UAA;
 import static org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils.CookieCsrfPostProcessor.cookieCsrf;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.TokenFormat.JWT;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.TokenFormat.OPAQUE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1629,8 +1628,8 @@ public class IdentityZoneEndpointsMockMvcTests extends InjectedMockContextTest {
         IdentityZone zone = createZone(id, HttpStatus.CREATED, identityClientToken, new IdentityZoneConfiguration());
 
         //create zone and clients
-        BaseClientDetails client =
-                new BaseClientDetails("limited-client", null, "openid", GRANT_TYPE_AUTHORIZATION_CODE, "uaa.resource");
+        BaseClientDetails client = new BaseClientDetails("limited-client", null, "openid", "authorization_code",
+                                                         "uaa.resource");
         client.setClientSecret("secret");
         client.addAdditionalInformation(ClientConstants.ALLOWED_PROVIDERS, Collections.singletonList(UAA));
         client.addAdditionalInformation("foo", "bar");
@@ -1798,8 +1797,8 @@ public class IdentityZoneEndpointsMockMvcTests extends InjectedMockContextTest {
     public void testCreateAndDeleteLimitedClientInNewZoneUsingZoneEndpoint() throws Exception {
         String id = generator.generate();
         IdentityZone zone = createZone(id, HttpStatus.CREATED, identityClientToken, new IdentityZoneConfiguration());
-        BaseClientDetails client =
-                new BaseClientDetails("limited-client", null, "openid", GRANT_TYPE_AUTHORIZATION_CODE, "uaa.resource");
+        BaseClientDetails client = new BaseClientDetails("limited-client", null, "openid", "authorization_code",
+                                                         "uaa.resource");
         client.setClientSecret("secret");
         client.addAdditionalInformation(ClientConstants.ALLOWED_PROVIDERS, Collections.singletonList(UAA));
         client.addAdditionalInformation("foo", "bar");
@@ -1845,8 +1844,8 @@ public class IdentityZoneEndpointsMockMvcTests extends InjectedMockContextTest {
 
     @Test
     public void testCreateAndDeleteLimitedClientInUAAZoneReturns403() throws Exception {
-        BaseClientDetails client =
-                new BaseClientDetails("limited-client", null, "openid", GRANT_TYPE_AUTHORIZATION_CODE, "uaa.resource");
+        BaseClientDetails client = new BaseClientDetails("limited-client", null, "openid", "authorization_code",
+                                                         "uaa.resource");
         client.setClientSecret("secret");
         client.addAdditionalInformation(ClientConstants.ALLOWED_PROVIDERS, Collections.singletonList(UAA));
         getMockMvc().perform(
@@ -1871,8 +1870,8 @@ public class IdentityZoneEndpointsMockMvcTests extends InjectedMockContextTest {
     public void testCreateAdminClientInNewZoneUsingZoneEndpointReturns400() throws Exception {
         String id = generator.generate();
         IdentityZone zone = createZone(id, HttpStatus.CREATED, identityClientToken, new IdentityZoneConfiguration());
-        BaseClientDetails client =
-                new BaseClientDetails("admin-client", null, null, "client_credentials", "clients.write");
+        BaseClientDetails client = new BaseClientDetails("admin-client", null, null, "client_credentials",
+                                                         "clients.write");
         client.setClientSecret("secret");
         getMockMvc().perform(
             post("/identity-zones/" + zone.getId() + "/clients")
@@ -2307,18 +2306,6 @@ public class IdentityZoneEndpointsMockMvcTests extends InjectedMockContextTest {
             "You cannot set issuer value unless you have set your own signing key for this identity zone.",
             adminToken
         );
-    }
-
-    @Test
-    public void testCreateZoneWithDefaultIdp() throws Exception {
-        IdentityZoneConfiguration identityZoneConfiguration = new IdentityZoneConfiguration();
-        identityZoneConfiguration.setDefaultIdentityProvider("originkey");
-        IdentityZone zone = createZone(generator.generate().toLowerCase(),
-                HttpStatus.CREATED,
-                uaaAdminClientToken,
-                identityZoneConfiguration
-        );
-        assertEquals("originkey", zone.getConfig().getDefaultIdentityProvider());
     }
 
     private MfaProvider<GoogleMfaProviderConfig> createGoogleMfaProvider(String zoneId) throws Exception {

@@ -164,6 +164,7 @@ Request Body    the authorization code (form encoded) in the case
 
                   grant_type=authorization_code
                   code=F45jH
+                  response_type=token
                   redirect_uri=http://example-app.com/welcome
 
                 OR the client credentials (form encoded) in the
@@ -182,6 +183,7 @@ Request Body    the authorization code (form encoded) in the case
                   client_secret=clientsecret
                   username=user
                   password=pass
+                  response_type=token
 
 Response Codes  ``200 OK``
 Response Body   ::
@@ -349,7 +351,7 @@ API Authorization Requests Code: ``GET /oauth/authorize`` (non standard /oauth/a
 *Sample curl commands for this flow*
 
 * curl -v -H"Authorization: Bearer $TOKEN" "http://localhost:8080/uaa/oauth/authorize?grant_type=authorization_code&client_id=identity&state=mystate&response_type=code&redirect_uri=http://localhost"
-* TOKEN can be fetched by: curl -v -XPOST -H"Application/json" -u "cf:" --data "username=marissa&password=koala&client_id=cf&grant_type=password" http://localhost:8080/uaa/oauth/token
+* TOKEN can be fetched by: curl -v -XPOST -H"Application/json" -u "cf:" --data "username=marissa&password=koala&client_id=cf&grant_type=password&response_type=token" http://localhost:8080/uaa/oauth/token
 
 
 Client Obtains Token: ``POST /oauth/token``
@@ -368,6 +370,7 @@ Request Body    the authorization code (form encoded), e.g.::
                   [client_secret=clientsecret]
                   grant_type=authorization_code
                   code=F45jH
+                  response_type=token
 
 Response Codes  ``200 OK``
 Response Body   ::
@@ -441,6 +444,7 @@ Request Body    the ``username`` and ``password`` (form encoded), e.g. ::
                   grant_type=password
                   username=user
                   password=pass
+                  response_type=token
 
 Response Codes  ``200 OK``
 Response Body   ::
@@ -460,6 +464,7 @@ Response Body   ::
 * Request query component: some parameters specified by the spec, appended to the query component using the "application/x-www-form-urlencoded" format,
 
   * ``grant_type=password``
+  * ``response_type=token``
   * ``client_id=cf``
   * ``client_secret=cfsecret``
   * ``username=marissa``
@@ -3432,11 +3437,12 @@ Internal Login: ``POST /login.do``
     302 - Found
     200 - Success
 
-Logout: ``GET /logout.do``
+Logout: `GET /logout.do`
 ------------------------
 
 The UAA can act as a Single Sign On server for the Cloud Foundry
-platform (and possibly user apps as well), so if a user logs out they log out of all the apps.
+platform (and possibly user apps as well), so if a user logs out he
+logs out of all the apps.
 
 OAuth2 Authorization Confirmation: ``GET /oauth/authorize/confirm_access``
 --------------------------------------------------------------------------

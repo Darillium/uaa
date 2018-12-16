@@ -112,8 +112,6 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
     private final String userLastLogonTimeDescription = "The unix epoch timestamp in milliseconds of when the user last authenticated. This field will be omitted from the response if the user has never authenticated.";
     private final String userPreviousLogonTimeDescription = "The unix epoch timestamp in milliseconds of 2nd to last successful user authentication. This field will only be included in the response once the user has authenticated two or more times.";
 
-    private final String scimWriteOrUaaAdminRequired = "Access token with `scim.write` or `uaa.admin` required";
-
     FieldDescriptor[] searchResponseFields = {
         fieldWithPath("startIndex").type(NUMBER).description(startIndexDescription),
         fieldWithPath("itemsPerPage").type(NUMBER).description(countAndItemsPerPageDescription),
@@ -401,7 +399,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessRequest(prettyPrint()),
                     preprocessResponse(prettyPrint()),
                     requestHeaders(
-                        headerWithName("Authorization").description("Access token with `scim.read` or `uaa.admin` required"),
+                        headerWithName("Authorization").description("Access token with scim.read or uaa.admin required"),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
                     ),
@@ -434,7 +432,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                          preprocessRequest(prettyPrint()),
                          preprocessResponse(prettyPrint()),
                          requestHeaders(
-                             headerWithName("Authorization").description("Access token with `scim.read` or `uaa.admin` required"),
+                             headerWithName("Authorization").description("Access token with scim.read or uaa.admin required"),
                              IDENTITY_ZONE_ID_HEADER,
                              IDENTITY_ZONE_SUBDOMAIN_HEADER
                          ),
@@ -494,7 +492,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description("Access token with `scim.write`, `uaa.account_status.write`, or `uaa.admin` required"),
+                        headerWithName("Authorization").description("Access token with scim.write, uaa.account_status.write, or uaa.admin required"),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
                     ),
@@ -526,7 +524,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description("Access token with `scim.write`, `uaa.account_status.write`, or `uaa.admin` required"),
+                        headerWithName("Authorization").description("Access token with scim.write, uaa.account_status.write, or uaa.admin required"),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
                     ),
@@ -564,7 +562,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description(scimWriteOrUaaAdminRequired),
+                        headerWithName("Authorization").description("Access token with scim.write or uaa.admin required"),
                         headerWithName("If-Match").description("The version of the SCIM object to be updated. Wildcard (*) accepted."),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
@@ -603,8 +601,8 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description(scimWriteOrUaaAdminRequired),
-                        headerWithName("If-Match").description("The version of the SCIM object to be updated. Wildcard (*) accepted.")
+                        headerWithName("Authorization").description("Access token with scim.write or uaa.admin required"),
+                        headerWithName("If-Match").description("The version of the SCIM object to be updated. Wildabccard (*) accepted.")
                     ),
                     patchFields,
                     responseFields(updateResponse)
@@ -638,7 +636,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description(scimWriteOrUaaAdminRequired),
+                        headerWithName("Authorization").description("Access token with scim.write or uaa.admin required"),
                         headerWithName("If-Match").optional().description("The version of the SCIM object to be deleted. Optional."),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
@@ -680,7 +678,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description("Access token with scope `scim.read`, `uaa.admin`, or `zones.uaa.admin` required"),
+                        headerWithName("Authorization").description("Access token with scim.write or uaa.admin required"),
                         headerWithName("If-Match").optional().description("The version of the SCIM object to be deleted. Optional."),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
@@ -705,6 +703,7 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                 .accept(APPLICATION_JSON)
                 .header("Authorization", "Bearer " + myToken)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header("If-Match", user.getVersion())
                 .content(JsonUtils.writeValueAsString(request))
         )
             .andExpect(status().isOk())
@@ -714,12 +713,12 @@ public class ScimUserEndpointDocs extends InjectedMockContextTest {
                     preprocessResponse(prettyPrint()),
                     pathParameters(parameterWithName("userId").description(userIdDescription)),
                     requestHeaders(
-                        headerWithName("Authorization").description("Access token with `password.write` or `uaa.admin` required"),
+                        headerWithName("Authorization").description("Access token with password.write or uaa.admin required"),
                         IDENTITY_ZONE_ID_HEADER,
                         IDENTITY_ZONE_SUBDOMAIN_HEADER
                     ),
                     requestFields(
-                        fieldWithPath("oldPassword").required().description("Old password. Optional when resetting another users password as an admin with `uaa.admin` scope").type(STRING),
+                        fieldWithPath("oldPassword").required().description("Old password. Optional when resetting another users password as an admin with uaa.admin scope").type(STRING),
                         fieldWithPath("password").required().description("New password.").type(STRING)
                     ),
                     responseFields(

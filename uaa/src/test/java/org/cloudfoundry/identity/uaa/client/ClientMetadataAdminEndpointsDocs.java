@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import javax.servlet.http.HttpServletResponse;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.cloudfoundry.identity.uaa.test.SnippetUtils.fieldWithPath;

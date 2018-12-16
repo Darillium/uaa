@@ -12,28 +12,15 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.mock.oauth;
 
-import org.cloudfoundry.identity.uaa.TestSpringContext;
 import org.cloudfoundry.identity.uaa.mock.InjectedMockContextTest;
 import org.cloudfoundry.identity.uaa.zone.ClientServicesExtension;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Set;
-@RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles("default")
-@WebAppConfiguration
-@ContextConfiguration(classes = TestSpringContext.class)
-public class CheckDefaultAuthoritiesMvcMockTests {
-    @Autowired
-    public WebApplicationContext webApplicationContext;
+
+public class CheckDefaultAuthoritiesMvcMockTests extends InjectedMockContextTest {
 
     ClientServicesExtension clientRegistrationService;
     private Set<String> defaultAuthorities;
@@ -56,9 +43,9 @@ public class CheckDefaultAuthoritiesMvcMockTests {
 
     @Before
     public void setUp() throws Exception {
-        clientRegistrationService = webApplicationContext.getBean(ClientServicesExtension.class);
+        clientRegistrationService = getWebApplicationContext().getBean(ClientServicesExtension.class);
 
-        defaultAuthorities = (Set<String>) webApplicationContext.getBean("defaultUserAuthorities");
+        defaultAuthorities = (Set<String>) getWebApplicationContext().getBean("defaultUserAuthorities");
     }
 
     @Test

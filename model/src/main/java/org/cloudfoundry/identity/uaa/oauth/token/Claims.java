@@ -47,8 +47,6 @@ public class Claims {
     private List<String> authorities;
     @JsonProperty(ClaimConstants.SCOPE)
     private List<String> scope;
-    @JsonProperty(ClaimConstants.GRANTED_SCOPES)
-    private List<String> grantedScopes;
     @JsonProperty(ClaimConstants.JTI)
     private String jti;
     @JsonProperty(ClaimConstants.AUD)
@@ -346,11 +344,4 @@ public class Claims {
         this.amr = amr;
     }
 
-    public List<String> getGrantedScopes() {
-        return grantedScopes;
-    }
-
-    public void setGrantedScopes(List<String> grantedScopes) {
-        this.grantedScopes = grantedScopes;
-    }
 }

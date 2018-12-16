@@ -37,15 +37,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_IMPLICIT;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_JWT_BEARER;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_SAML2_BEARER;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_USER_TOKEN;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -117,7 +115,7 @@ public class ClientAdminEndpointsValidatorTests {
     }
 
     public void validate_rejectsMalformedUrls() throws Exception {
-        client.setAuthorizedGrantTypes(Arrays.asList(GRANT_TYPE_AUTHORIZATION_CODE));
+        client.setAuthorizedGrantTypes(Arrays.asList("authorization_code"));
         client.setRegisteredRedirectUri(Collections.singleton("httasdfasp://anything.comadfsfdasfdsa"));
 
         validator.validate(client, true, true);
@@ -125,7 +123,7 @@ public class ClientAdminEndpointsValidatorTests {
 
     @Test
     public void validate_allowsAUrlWithUnderscore() throws Exception {
-        client.setAuthorizedGrantTypes(Arrays.asList(GRANT_TYPE_AUTHORIZATION_CODE));
+        client.setAuthorizedGrantTypes(Arrays.asList("authorization_code"));
         client.setRegisteredRedirectUri(Collections.singleton("http://foo_name.anything.com/"));
 
         validator.validate(client, true, true);
@@ -179,7 +177,7 @@ public class ClientAdminEndpointsValidatorTests {
         invalidRedirectUris.addAll(httpWildCardUrls);
         invalidRedirectUris.addAll(convertToHttps(httpWildCardUrls));
 
-        for(String s : Arrays.asList(new String[] {GRANT_TYPE_AUTHORIZATION_CODE, GRANT_TYPE_IMPLICIT})) {
+        for(String s : Arrays.asList(new String[] {"authorization_code", "implicit"})) {
             client.setAuthorizedGrantTypes(Collections.singleton(s));
             for(String url : invalidRedirectUris) {
                 testValidatorForInvalidURL(url);
@@ -210,7 +208,7 @@ public class ClientAdminEndpointsValidatorTests {
         urls.add("http://valid.com");
         urls.add("http://valid.com/with/path*");
         urls.add("http://invalid*");
-        client.setAuthorizedGrantTypes(Collections.singleton(GRANT_TYPE_AUTHORIZATION_CODE));
+        client.setAuthorizedGrantTypes(Collections.singleton("authorization_code"));
         client.setRegisteredRedirectUri(urls);
         validator.validateClientRedirectUri(client);
     }

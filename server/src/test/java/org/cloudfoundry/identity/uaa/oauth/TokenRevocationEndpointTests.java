@@ -25,7 +25,6 @@ import org.cloudfoundry.identity.uaa.resources.jdbc.JdbcPagingListFactory;
 import org.cloudfoundry.identity.uaa.scim.ScimUserProvisioning;
 import org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimUserProvisioning;
 import org.cloudfoundry.identity.uaa.test.JdbcTestBase;
-import org.cloudfoundry.identity.uaa.util.TimeServiceImpl;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenantJdbcClientDetailsService;
 import org.junit.After;
@@ -68,7 +67,7 @@ public class TokenRevocationEndpointTests extends JdbcTestBase {
             jdbcTemplate,
             new JdbcPagingListFactory(jdbcTemplate, limitSqlAdapter)
         );
-        JdbcRevocableTokenProvisioning provisioning = spy(new JdbcRevocableTokenProvisioning(jdbcTemplate, limitSqlAdapter, new TimeServiceImpl()));
+        JdbcRevocableTokenProvisioning provisioning = spy(new JdbcRevocableTokenProvisioning(jdbcTemplate, limitSqlAdapter));
         endpoint = spy(new TokenRevocationEndpoint(clientService, userProvisioning, provisioning));
         publisher = mock(ApplicationEventPublisher.class);
         endpoint.setApplicationEventPublisher(publisher);

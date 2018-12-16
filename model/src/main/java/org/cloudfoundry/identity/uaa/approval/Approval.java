@@ -116,8 +116,8 @@ public class Approval {
     }
 
     @JsonIgnore
-    public boolean isActiveAsOf(Date currentDate) {
-        return expiresAt != null && expiresAt.after(currentDate);
+    public boolean isCurrentlyActive() {
+        return expiresAt != null && expiresAt.after(new Date());
     }
 
     @Override

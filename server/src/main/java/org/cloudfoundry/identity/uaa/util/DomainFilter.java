@@ -33,10 +33,6 @@ public class DomainFilter {
     private static Log logger = LogFactory.getLog(DomainFilter.class);
 
     public static List<IdentityProvider> filter(List<IdentityProvider> activeProviders, ClientDetails client, String email) {
-        return filter(activeProviders, client, email, true);
-    }
-
-    public static List<IdentityProvider> filter(List<IdentityProvider> activeProviders, ClientDetails client, String email, boolean useUaaFallback) {
         if (!StringUtils.hasText(email)) {
             return EMPTY_LIST;
         }
@@ -57,7 +53,7 @@ public class DomainFilter {
                     activeProviders.stream().filter(
                         p -> doesEmailDomainMatchProvider(p, domain, true)
                     ).collect(Collectors.toList());
-                if (explicitlyMatched.size()>0 || !useUaaFallback) {
+                if (explicitlyMatched.size()>0) {
                     return explicitlyMatched;
                 }
 
@@ -65,6 +61,7 @@ public class DomainFilter {
                     activeProviders.stream().filter(
                         p -> doesEmailDomainMatchProvider(p, domain, false)
                     ).collect(Collectors.toList());
+
             }
         }
         return activeProviders != null ? activeProviders : EMPTY_LIST;

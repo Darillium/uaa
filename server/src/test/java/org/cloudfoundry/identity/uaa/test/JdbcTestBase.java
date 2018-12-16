@@ -42,7 +42,7 @@ public class JdbcTestBase extends TestClassNullifier {
     public void setUp() throws Exception {
         IdentityZoneHolder.clear();
         MockEnvironment environment = new MockEnvironment();
-        if (System.getProperty("spring.profiles.active") != null) {
+        if (System.getProperty("spring.profiles.active")!=null) {
             environment.setActiveProfiles(StringUtils.commaDelimitedListToStringArray(System.getProperty("spring.profiles.active")));
         }
         setUp(environment);
@@ -69,13 +69,21 @@ public class JdbcTestBase extends TestClassNullifier {
     }
 
     @After
-    public void tearDown() {
-        cleanData();
+    public final void tearDown() throws Exception {
+        tearDown(needsToCleanData());
+    }
 
+    public final void tearDown(boolean cleandata) throws Exception {
+        if (cleandata) {
+            cleanData();
+        }
         IdentityZoneHolder.clear();
         IdentityZoneHolder.setProvisioning(new JdbcIdentityZoneProvisioning(jdbcTemplate));
-        ((org.apache.tomcat.jdbc.pool.DataSource) dataSource).close(true);
+        ((org.apache.tomcat.jdbc.pool.DataSource)dataSource).close(true);
         webApplicationContext.destroy();
     }
 
+    protected boolean needsToCleanData() {
+        return true;
+    }
 }

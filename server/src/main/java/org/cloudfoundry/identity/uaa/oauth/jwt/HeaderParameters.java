@@ -1,110 +1,25 @@
 package org.cloudfoundry.identity.uaa.oauth.jwt;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+/*******************************************************************************
+ * Cloud Foundry
+ * Copyright (c) [2009-2016] Pivotal Software, Inc. All Rights Reserved.
+ * <p>
+ * This product is licensed to you under the Apache License, Version 2.0 (the "License").
+ * You may not use this product except in compliance with the License.
+ * <p>
+ * This product includes a number of subcomponents with
+ * separate copyright notices and license terms. Your use of these
+ * subcomponents is subject to the terms and conditions of the
+ * subcomponent's license, as noted in the LICENSE file.
+ *******************************************************************************/
+public interface HeaderParameters {
+    String getAlg();
 
-import static com.fasterxml.jackson.annotation.JsonInclude.*;
+    String getEnc();
 
-public class HeaderParameters {
-    private static final String JWT = "JWT";
-    @JsonProperty
-    String alg;
-    @JsonProperty
-    @JsonInclude(Include.NON_NULL)
-    String enc;
-    @JsonProperty
-    @JsonInclude(Include.NON_NULL)
-    String iv;
-    @JsonProperty
-    String jku;
-    @JsonProperty
-    String kid;
-    @JsonProperty
-    String typ;
+    String getIv();
 
-    @SuppressWarnings("unused")
-    HeaderParameters() {
+    String getTyp();
 
-    }
-
-    HeaderParameters(String alg,
-                     String enc,
-                     String iv,
-                     String kid,
-                     String jku,
-                     String typ) {
-        if (alg == null) {
-            throw new IllegalArgumentException("alg is required");
-        }
-        this.alg = alg;
-        this.enc = enc;
-        this.iv = iv;
-        this.jku = jku;
-        this.kid = kid;
-        this.typ = typ;
-    }
-
-    HeaderParameters(String alg,
-                     String enc,
-                     String iv,
-                     String kid,
-                     String jku) {
-        this(alg, enc, iv, kid, jku, JWT);
-    }
-
-    public String getAlg() {
-        return alg;
-    }
-
-    public void setAlg(String alg) {
-        if (alg == null) {
-            throw new IllegalArgumentException("alg is required");
-        }
-
-        this.alg = alg;
-    }
-
-    public String getEnc() {
-        return enc;
-    }
-
-    public void setEnc(String enc) {
-        this.enc = enc;
-    }
-
-    public void setIv(String iv) {
-        this.iv = iv;
-    }
-
-    public String getIv() {
-        return iv;
-    }
-
-    public String getJku() {
-        return jku;
-    }
-
-    public void setJku(String jku) {
-        this.jku = jku;
-    }
-
-    public void setKid(String kid) {
-        this.kid = kid;
-    }
-
-    public String getKid() {
-        return kid;
-    }
-
-    public void setTyp(String typ) {
-        if (typ != null && !JWT.equalsIgnoreCase(typ)) {
-            throw new IllegalArgumentException(String.format("typ is not \"%s\"", JWT));
-        }
-        this.typ = typ;
-    }
-
-    public String getTyp() {
-        return typ;
-    }
-
+    String getKid();
 }

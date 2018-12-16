@@ -6,6 +6,8 @@ import java.util.List;
 import org.cloudfoundry.identity.uaa.authentication.event.AbstractUaaAuthenticationEvent;
 import org.cloudfoundry.identity.uaa.authentication.event.MfaAuthenticationFailureEvent;
 import org.cloudfoundry.identity.uaa.authentication.event.MfaAuthenticationSuccessEvent;
+import org.cloudfoundry.identity.uaa.authentication.event.UserAuthenticationFailureEvent;
+import org.cloudfoundry.identity.uaa.authentication.event.UserAuthenticationSuccessEvent;
 import org.cloudfoundry.identity.uaa.mfa.StatelessMfaAuthenticationFilter;
 import org.cloudfoundry.identity.uaa.test.TestApplicationEventListener;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
@@ -20,8 +22,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static java.util.Arrays.asList;
 import static org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils.getMfaCodeFromCredentials;
 import static org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils.removeEventListener;
+import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.OPAQUE;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.REQUEST_TOKEN_FORMAT;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.TokenFormat.OPAQUE;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
+
     private TestApplicationEventListener<AbstractUaaAuthenticationEvent> listener;
 
     @Before
@@ -62,9 +65,10 @@ public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
         getMockMvc().perform(
             post("/oauth/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .param(OAuth2Utils.RESPONSE_TYPE, "token")
                 .param(OAuth2Utils.GRANT_TYPE, "password")
                 .param(OAuth2Utils.CLIENT_ID, "cf")
-                .param(REQUEST_TOKEN_FORMAT, OPAQUE.getStringValue())
+                .param(REQUEST_TOKEN_FORMAT, OPAQUE)
                 .param("client_secret", "")
                 .param("username", "marissa")
                 .param("password", "koala")
@@ -76,6 +80,7 @@ public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
 
         validateAuthEvents(
             asList(
+                UserAuthenticationSuccessEvent.class,
                 MfaAuthenticationSuccessEvent.class
             ), "marissa"
         );
@@ -103,9 +108,10 @@ public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
         getMockMvc().perform(
             post("/oauth/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .param(OAuth2Utils.RESPONSE_TYPE, "token")
                 .param(OAuth2Utils.GRANT_TYPE, "password")
                 .param(OAuth2Utils.CLIENT_ID, "cf")
-                .param(REQUEST_TOKEN_FORMAT, OPAQUE.getStringValue())
+                .param(REQUEST_TOKEN_FORMAT, OPAQUE)
                 .param("client_secret", "")
                 .param("username", "marissa")
                 .param("password", "koala")
@@ -117,6 +123,7 @@ public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
             .andExpect(jsonPath("error_description").value(containsString("Bad credentials")));
         validateAuthEvents(
             asList(
+                UserAuthenticationFailureEvent.class,
                 MfaAuthenticationFailureEvent.class
             ), "marissa"
         );
@@ -128,9 +135,10 @@ public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
         getMockMvc().perform(
             post("/oauth/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .param(OAuth2Utils.RESPONSE_TYPE, "token")
                 .param(OAuth2Utils.GRANT_TYPE, "password")
                 .param(OAuth2Utils.CLIENT_ID, "cf")
-                .param(REQUEST_TOKEN_FORMAT, OPAQUE.getStringValue())
+                .param(REQUEST_TOKEN_FORMAT, OPAQUE)
                 .param("client_secret", "")
                 .param("username", "marissa")
                 .param("password", "koala")
@@ -142,8 +150,12 @@ public class MfaPasswordGrantMockMvcTests extends AbstractTokenMockMvcTests {
             .andExpect(jsonPath("error_description").value(containsString("register a multi-factor")));
         validateAuthEvents(
             asList(
+                UserAuthenticationFailureEvent.class,
                 MfaAuthenticationFailureEvent.class
             ), "marissa"
         );
     }
+
+
+
 }

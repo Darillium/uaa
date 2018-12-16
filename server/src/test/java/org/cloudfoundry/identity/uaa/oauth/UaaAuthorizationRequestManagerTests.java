@@ -27,6 +27,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -52,11 +53,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.cloudfoundry.identity.uaa.oauth.client.ClientConstants.REQUIRED_USER_GROUPS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.CLIENT_ID;
@@ -314,6 +316,18 @@ public class UaaAuthorizationRequestManagerTests {
         factory.createAuthorizationRequest(parameters);
         throw new AssertionError();
     }
+
+    @Test
+    @Ignore
+    public void missing_required_user_groups() {
+        expectedException.expect(InvalidScopeException.class);
+        expectedException.expectMessage("User does not meet the client's required group criteria.");
+        factory.setSecurityContextAccessor(securityContextAccessor);
+        client.addAdditionalInformation(REQUIRED_USER_GROUPS, Arrays.asList("group.that.doesnt.exist"));
+        factory.createAuthorizationRequest(parameters);
+        throw new AssertionError();
+    }
+
 
     @Test
     public void testResourecIdsExtracted() {

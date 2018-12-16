@@ -42,7 +42,6 @@ public class IdentityZoneConfiguration {
     private UserConfig userConfig = new UserConfig();
     private MfaConfig mfaConfig = new MfaConfig();
     private String issuer;
-    private String defaultIdentityProvider;
 
     public IdentityZoneConfiguration() {}
 
@@ -140,14 +139,6 @@ public class IdentityZoneConfiguration {
 
     public void setUserConfig(UserConfig userConfig) {
         this.userConfig = userConfig;
-    }
-
-    public String getDefaultIdentityProvider() {
-        return defaultIdentityProvider;
-    }
-
-    public void setDefaultIdentityProvider(String defaultIdentityProvider) {
-        this.defaultIdentityProvider = defaultIdentityProvider;
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

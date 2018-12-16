@@ -15,12 +15,18 @@
 package org.cloudfoundry.identity.uaa.oauth.token;
 
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthentication;
+import org.cloudfoundry.identity.uaa.authentication.UaaPrincipal;
+import org.cloudfoundry.identity.uaa.constants.OriginKeys;
+import org.cloudfoundry.identity.uaa.oauth.DisallowedIdpException;
 import org.cloudfoundry.identity.uaa.oauth.UaaOauth2Authentication;
 import org.cloudfoundry.identity.uaa.oauth.client.ClientConstants;
+import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.zone.ClientServicesExtension;
+import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
@@ -42,6 +48,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
+import org.springframework.security.oauth2.common.exceptions.UnauthorizedClientException;
+import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
@@ -72,8 +80,8 @@ import java.util.Map;
 import static org.cloudfoundry.identity.uaa.oauth.token.ClaimConstants.JTI;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_SAML2_BEARER;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.USER_TOKEN_REQUESTING_CLIENT_ID;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.CLIENT_ID;
@@ -191,6 +199,59 @@ public class Saml2TokenGranterTest {
         granter.grant(GRANT_TYPE, tokenRequest);
     }
 
+    @Test(expected = UnauthorizedClientException.class)
+    @Ignore
+    public void test_oauth2_authentication_with_invalid_allowed_provider() {
+        OAuth2Request myReq = new OAuth2Request(requestParameters, receivingClient.getClientId(), receivingClient.getAuthorities(), true, receivingClient.getScope(), receivingClient.getResourceIds(), null, null, null);
+        UaaUser user = new UaaUser("testid", "testuser","","test@test.org",AuthorityUtils.commaSeparatedStringToAuthorityList("foo.bar,spam.baz,space.1.developer,space.2.developer,space.1.admin"),"givenname", "familyname", null, null, OriginKeys.UAA, null, true, IdentityZone.getUaa().getId(), "testid", new Date());
+        UaaPrincipal uaaPrincipal = new UaaPrincipal(user);
+        when(uaaUserDatabase.retrieveUserById(anyString())).thenReturn(user);
+        BaseClientDetails myClient = new BaseClientDetails(requestingClient);
+        List<String> allowedProviders = new LinkedList<String>();
+        allowedProviders.add("anyIDP");
+        Map<String, Object> additionalInformation = new LinkedHashMap<String, Object>();
+        Collection me = AuthorityUtils.commaSeparatedStringToAuthorityList("openid,foo.bar,uaa.user,one.read");
+        //when(new DefaultSecurityContextAccessor()).thenReturn((DefaultSecurityContextAccessor) securityContextAccessor);
+        mockedgranter = mock(Saml2TokenGranter.class);
+        when(mockedgranter.validateRequest(tokenRequest)).thenReturn(userAuthentication);
+        when(mockedgranter.getOAuth2Authentication((ClientDetails)myClient, (TokenRequest)tokenRequest)).thenCallRealMethod();
+        myClient.setScope(StringUtils.commaDelimitedListToSet("openid,foo.bar"));
+        additionalInformation.put(ClientConstants.ALLOWED_PROVIDERS, allowedProviders);
+        myClient.setAdditionalInformation(additionalInformation);
+        when(userAuthentication.getAuthorities()).thenReturn(me);
+        when(requestFactory.createOAuth2Request(receivingClient, tokenRequest)).thenReturn(myReq);
+        when(userAuthentication.getPrincipal()).thenReturn(uaaPrincipal);
+        when(mockedgranter.getRequestFactory()).thenReturn(requestFactory);
+        mockedgranter.getOAuth2Authentication(myClient, tokenRequest);
+    }
+
+    @Test(expected = DisallowedIdpException.class)
+    @Ignore
+    public void test_oauth2_authentication_with_disallowed_provider() {
+        OAuth2Request myReq = new OAuth2Request(requestParameters, receivingClient.getClientId(), receivingClient.getAuthorities(), true, receivingClient.getScope(), receivingClient.getResourceIds(), null, null, null);
+        UaaUser user = new UaaUser("testid", "testuser","","test@test.org",AuthorityUtils.commaSeparatedStringToAuthorityList("foo.bar,spam.baz,space.1.developer,space.2.developer,space.1.admin"),"givenname", "familyname", null, null, OriginKeys.UAA, null, true, IdentityZone.getUaa().getId(), "testid", new Date());
+        UaaPrincipal uaaPrincipal = new UaaPrincipal(user);
+        when(uaaUserDatabase.retrieveUserById(anyString())).thenReturn(user);
+        BaseClientDetails myClient = new BaseClientDetails(requestingClient);
+        List<String> allowedProviders = new LinkedList<String>();
+        allowedProviders.add("anyIDP");
+        Map<String, Object> additionalInformation = new LinkedHashMap<String, Object>();
+        Collection me = AuthorityUtils.commaSeparatedStringToAuthorityList("openid,foo.bar,uaa.user,one.read");
+        //when(new DefaultSecurityContextAccessor()).thenReturn((DefaultSecurityContextAccessor) securityContextAccessor);
+        mockedgranter = mock(Saml2TokenGranter.class);
+        when(mockedgranter.validateRequest(tokenRequest)).thenReturn(userAuthentication);
+        when(mockedgranter.getOAuth2Authentication(myClient, tokenRequest)).thenCallRealMethod();
+        myClient.setScope(StringUtils.commaDelimitedListToSet("openid,foo.bar"));
+        additionalInformation.put(ClientConstants.ALLOWED_PROVIDERS, allowedProviders);
+        myClient.setAdditionalInformation(additionalInformation);
+        when(userAuthentication.getAuthorities()).thenReturn(me);
+        when(requestFactory.createOAuth2Request(receivingClient, tokenRequest)).thenReturn(myReq);
+        when(userAuthentication.getPrincipal()).thenReturn(uaaPrincipal);
+        //when(identityProviderProvisioning.retrieveByOrigin("uaa","uaa")).thenThrow(new EmptyResultDataAccessException(0));
+        when(mockedgranter.getRequestFactory()).thenReturn(requestFactory);
+        mockedgranter.getOAuth2Authentication(myClient, tokenRequest);
+    }
+
     @Test
     public void test_oauth2_authentication_with_empty_allowed() {
         OAuth2Request myReq = new OAuth2Request(requestParameters, receivingClient.getClientId(), receivingClient.getAuthorities(), true, receivingClient.getScope(), receivingClient.getResourceIds(), null, null, null);
@@ -284,7 +345,7 @@ public class Saml2TokenGranterTest {
 		UnmarshallerFactory unmarshallerFactory = Configuration.getUnmarshallerFactory();
 		Unmarshaller unmarshaller = unmarshallerFactory.getUnmarshaller(samlElement);
 		if (unmarshaller == null) {
-			throw new InsufficientAuthenticationException("Unsuccessful to unmarshal assertion string");
+			throw new InsufficientAuthenticationException("Failed to unmarshal assertion string");
 		}
 		return unmarshaller.unmarshall(samlElement);
 	}

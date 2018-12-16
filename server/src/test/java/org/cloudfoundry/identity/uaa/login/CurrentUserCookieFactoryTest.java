@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.net.URLDecoder;
 
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.*;
 
 public class CurrentUserCookieFactoryTest {

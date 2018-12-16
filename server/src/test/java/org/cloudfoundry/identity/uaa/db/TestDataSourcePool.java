@@ -6,6 +6,7 @@ package org.cloudfoundry.identity.uaa.db;
 import static org.junit.Assert.*;
 
 import org.cloudfoundry.identity.uaa.test.JdbcTestBase;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /**

@@ -18,7 +18,7 @@ package org.cloudfoundry.identity.uaa.mock.token;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
 import org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils;
-import org.cloudfoundry.identity.uaa.oauth.KeyInfoService;
+import org.cloudfoundry.identity.uaa.oauth.KeyInfo;
 import org.cloudfoundry.identity.uaa.oauth.token.TokenConstants;
 import org.cloudfoundry.identity.uaa.provider.IdentityProvider;
 import org.cloudfoundry.identity.uaa.provider.JdbcIdentityProviderProvisioning;
@@ -153,7 +153,7 @@ public class JwtBearerGrantMockMvcTests extends AbstractTokenMockMvcTests {
             .param("client_id", client.getClientId())
             .param("client_secret", client.getClientSecret())
             .param(GRANT_TYPE, GRANT_TYPE_JWT_BEARER)
-            .param(TokenConstants.REQUEST_TOKEN_FORMAT, TokenConstants.TokenFormat.OPAQUE.getStringValue())
+            .param(TokenConstants.REQUEST_TOKEN_FORMAT, TokenConstants.OPAQUE)
             .param("response_type", "token id_token")
             .param("scope", "openid")
             .param("assertion", assertion);
@@ -227,10 +227,10 @@ public class JwtBearerGrantMockMvcTests extends AbstractTokenMockMvcTests {
         return details;
     }
 
-    public String getTokenVerificationKey(IdentityZone zone) {
+    public String getTokenVerificationKey(IdentityZone zone) throws Exception {
         IdentityZoneHolder.set(zone);
         try {
-            return new KeyInfoService("https://someurl").getActiveKey().verifierKey();
+            return KeyInfo.getActiveKey().getVerifierKey();
         } finally {
             IdentityZoneHolder.clear();
         }

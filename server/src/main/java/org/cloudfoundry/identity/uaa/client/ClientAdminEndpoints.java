@@ -326,6 +326,7 @@ public class ClientAdminEndpoints implements InitializingBean, ApplicationEventP
         try {
             ClientDetails existing = getClientDetails(clientId);
             if (existing==null) {
+                //TODO - should we proceed? Previous code did by throwing a NPE and logging a warning
                 logger.warn("Couldn't fetch client config, null, for client_id: " + clientId);
             } else {
                 details = syncWithExisting(existing, client);
@@ -620,6 +621,8 @@ public class ClientAdminEndpoints implements InitializingBean, ApplicationEventP
             if (!clientId.equals(currentClientId)) {
                 logger.warn("Client with id " + currentClientId + " attempting to change password for client "
                                 + clientId);
+                // TODO: This should be audited when we have non-authentication
+                // events in the log
                 throw new IllegalStateException("Bad request. Not permitted to change another client's secret");
             }
 

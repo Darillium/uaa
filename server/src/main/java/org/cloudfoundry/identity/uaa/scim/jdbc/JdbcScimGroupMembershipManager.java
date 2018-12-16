@@ -111,6 +111,7 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
     }
 
     public Set<ScimGroup> getDefaultUserGroups(String zoneId) {
+        //TODO - replicates previous behavior where groups are automatically created here
         if (!hasText(zoneId)) {
             return emptySet();
         }

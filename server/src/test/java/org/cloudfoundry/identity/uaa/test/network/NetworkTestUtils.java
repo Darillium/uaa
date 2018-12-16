@@ -15,12 +15,28 @@
 
 package org.cloudfoundry.identity.uaa.test.network;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsExchange;
+import com.sun.net.httpserver.HttpsParameters;
+import com.sun.net.httpserver.HttpsServer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
+import sun.security.x509.X500Name;
 
-import javax.net.ssl.*;
-import java.io.*;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -68,7 +84,10 @@ public class NetworkTestUtils {
           commonName,
           organizationalUnit,
           organization,
-                issueDate,
+          city,
+          state,
+          country,
+          issueDate,
           validityDays,
           alias,
           keyPass);
@@ -81,6 +100,9 @@ public class NetworkTestUtils {
                                    String commonName,
                                    String organizationalUnit,
                                    String organization,
+                                   String city,
+                                   String state,
+                                   String country,
                                    Date issueDate,
                                    long validityDays,
                                    String keyAlias,
@@ -92,7 +114,7 @@ public class NetworkTestUtils {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(keysize);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        X509Certificate[] chain = {getSelfCertificate(keyPair, organization, organizationalUnit, commonName, issueDate, validityDays * 24 * 60 * 60, "SHA256withRSA")};
+        X509Certificate[] chain = {getSelfCertificate(new X500Name(commonName, organizationalUnit, organization, city, state, country), issueDate, validityDays * 24 * 60 * 60, keyPair, "SHA256withRSA")};
         keyStore.setKeyEntry(keyAlias, keyPair.getPrivate(), keyPass.toCharArray(), chain);
 
         File keystore = new File(directory, filename);

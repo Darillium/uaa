@@ -62,7 +62,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 import static org.cloudfoundry.identity.uaa.integration.util.IntegrationTestUtils.doesSupportZoneDNS;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
@@ -375,7 +374,7 @@ public class ClientAdminEndpointsIntegrationTests {
 
     @Test
     public void authzCodeGrantAutomaticallyAddsRefreshToken() throws Exception {
-        BaseClientDetails client = createClient(GRANT_TYPE_AUTHORIZATION_CODE);
+        BaseClientDetails client = createClient("authorization_code");
 
         ResponseEntity<String> result = serverRunning.getForString("/oauth/clients/" + client.getClientId(), headers);
         assertEquals(HttpStatus.OK, result.getStatusCode());

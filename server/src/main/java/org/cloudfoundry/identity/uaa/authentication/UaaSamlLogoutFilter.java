@@ -11,6 +11,7 @@ import org.springframework.security.saml.SAMLLogoutFilter;
 import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.util.Assert;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

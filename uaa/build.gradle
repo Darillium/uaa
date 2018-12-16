@@ -2,7 +2,6 @@ Project identityServer = parent.subprojects.find { it.name.equals('cloudfoundry-
 
 apply plugin: 'war'
 apply plugin: 'org.asciidoctor.convert'
-apply plugin: 'com.moowork.node'
 
 processResources {
   //maven replaces project.artifactId in the log4j.properties file
@@ -62,25 +61,6 @@ dependencies {
   testCompile group: 'org.apache.tomcat', name: 'tomcat-jdbc', version:parent.tomcatJdbcPoolVersion
   testCompile 'org.springframework.restdocs:spring-restdocs-mockmvc:1.2.0.RC1'
 }
-
-node {
-  npmVersion = '2.1.5'
-
-  // If true, it will download node using above parameters.
-  // If false, it will try to use globally installed node.
-  download = true
-
-  // Set the work directory for NPM
-  npmWorkDir = file("${project.buildDir}/npm")
-
-  // Set the work directory where node_modules should be located
-  nodeModulesDir = file("${project.projectDir}")
-}
-task jasmineTests {
-  dependsOn(npm_install)
-  dependsOn(npm_test)
-}
-
 ext {
   snippetsDir = file('build/generated-snippets')
 }
@@ -137,6 +117,17 @@ integrationTest {
 war {
   //workaround for maven <scope>optional</scope>
   rootSpec.exclude("**/spring-security-oauth-*.jar")
+}
+
+task npmInstall(type: Exec) {
+  executable 'npm'
+  args 'install'
+}
+
+task jasmineTest(type: Exec) {
+  dependsOn npmInstall
+  executable 'npm'
+  args 'test'
 }
 
 

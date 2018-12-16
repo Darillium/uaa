@@ -130,15 +130,13 @@ public class ScimGroupEndpoints {
         return false;
     }
 
-    private List<ScimGroup> filterForCurrentUser(List<ScimGroup> input, int startIndex, int count, boolean includeMembers) {
+    private List<ScimGroup> filterForCurrentUser(List<ScimGroup> input, int startIndex, int count) {
         List<ScimGroup> response = new ArrayList<ScimGroup>();
         int expectedResponseSize = Math.min(count, input.size());
         boolean needMore = response.size() < expectedResponseSize;
         while (needMore && startIndex <= input.size()) {
             for (ScimGroup group : UaaPagingUtils.subList(input, startIndex, count)) {
-                if (includeMembers) {
-                    group.setMembers(membershipManager.getMembers(group.getId(), false, IdentityZoneHolder.get().getId()));
-                }
+                group.setMembers(membershipManager.getMembers(group.getId(), false, IdentityZoneHolder.get().getId()));
                 response.add(group);
                 needMore = response.size() < expectedResponseSize;
                 if (!needMore) {
@@ -171,9 +169,9 @@ public class ScimGroupEndpoints {
             throw new ScimException("Invalid filter expression: [" + filter + "]", HttpStatus.BAD_REQUEST);
         }
 
-        List<ScimGroup> input;
+        List<ScimGroup> input = filterForCurrentUser(result, startIndex, count);
+
         if (!StringUtils.hasLength(attributesCommaSeparated)) {
-            input = filterForCurrentUser(result, startIndex, count, true);
             return new SearchResults<>(Arrays.asList(ScimCore.SCHEMAS), input, startIndex, count,
                 result.size());
         }
@@ -181,8 +179,6 @@ public class ScimGroupEndpoints {
         AttributeNameMapper mapper = new SimpleAttributeNameMapper(Collections.emptyMap());
 
         String[] attributes = attributesCommaSeparated.split(",");
-        input = filterForCurrentUser(result, startIndex, count, Arrays.asList(attributes).contains("members"));
-
         try {
             return SearchResultsFactory.buildSearchResultFrom(input, startIndex, count, result.size(), attributes,
                 mapper, Arrays.asList(ScimCore.SCHEMAS));

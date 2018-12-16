@@ -179,6 +179,7 @@ public class SamlLoginServerKeyManagerTests {
         assertNotNull(credential.getPrivateKey());
         assertNotNull(credential.getPublicKey());
         assertNotNull(credential);
+        System.out.println("certificate = " + certificate);
     }
 
     @Test(expected = IllegalArgumentException.class)

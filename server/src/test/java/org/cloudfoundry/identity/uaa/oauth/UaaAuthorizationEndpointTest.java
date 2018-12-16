@@ -3,7 +3,7 @@ package org.cloudfoundry.identity.uaa.oauth;
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthentication;
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthenticationDetails;
 import org.cloudfoundry.identity.uaa.authentication.UaaPrincipal;
-import org.cloudfoundry.identity.uaa.oauth.token.CompositeToken;
+import org.cloudfoundry.identity.uaa.oauth.token.CompositeAccessToken;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.security.core.Authentication;
@@ -18,8 +18,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_IMPLICIT;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -53,40 +51,40 @@ public class UaaAuthorizationEndpointTest {
     @Test
     public void testGetGrantType_id_token_only_is_implicit() {
         responseTypes.add("id_token");
-        assertEquals(GRANT_TYPE_IMPLICIT, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("implicit", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
     public void testGetGrantType_token_as_response_is_implcit() {
         responseTypes.add("token");
-        assertEquals(GRANT_TYPE_IMPLICIT, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("implicit", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
     public void testGetGrantType_code_is_auth_code() {
         responseTypes.add("code");
-        assertEquals(GRANT_TYPE_AUTHORIZATION_CODE, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("authorization_code", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
     public void testGetGrantType_code_and_token_is_implicit() {
         responseTypes.add("code");
         responseTypes.add("token");
-        assertEquals(GRANT_TYPE_IMPLICIT, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("implicit", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
     public void testGetGrantType_id_token_and_token_is_implicit() {
         responseTypes.add("id_token");
         responseTypes.add("token");
-        assertEquals(GRANT_TYPE_IMPLICIT, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("implicit", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
     public void testGetGrantType_code_and_id_token_is_authorization_code() {
         responseTypes.add("code");
         responseTypes.add("id_token");
-        assertEquals(GRANT_TYPE_AUTHORIZATION_CODE, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("authorization_code", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
@@ -94,7 +92,7 @@ public class UaaAuthorizationEndpointTest {
         responseTypes.add("code");
         responseTypes.add("id_token");
         responseTypes.add("token");
-        assertEquals(GRANT_TYPE_IMPLICIT, uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
+        assertEquals("implicit", uaaAuthorizationEndpoint.deriveGrantTypeFromResponseType(responseTypes));
     }
 
     @Test
@@ -109,7 +107,7 @@ public class UaaAuthorizationEndpointTest {
             }
         });
         authorizationRequest.setState("California");
-        CompositeToken accessToken = new CompositeToken("TOKEN_VALUE+=");
+        CompositeAccessToken accessToken = new CompositeAccessToken("TOKEN_VALUE+=");
         accessToken.setIdTokenValue("idTokenValue");
         UaaPrincipal principal = new UaaPrincipal("userid", "username", "email", "origin", "extid", "zoneid");
         UaaAuthenticationDetails details = new UaaAuthenticationDetails(true, "clientid", "origin", "SOMESESSIONID");
@@ -140,7 +138,7 @@ public class UaaAuthorizationEndpointTest {
                 put("prompt", "none");
             }
         });
-        CompositeToken accessToken = new CompositeToken("TOKEN_VALUE+=");
+        CompositeAccessToken accessToken = new CompositeAccessToken("TOKEN_VALUE+=");
         UaaPrincipal principal = new UaaPrincipal("userid", "username", "email", "origin", "extid", "zoneid");
         UaaAuthenticationDetails details = new UaaAuthenticationDetails(true, "clientid", "origin", "SOMESESSIONID");
         Authentication authUser = new UaaAuthentication(principal, Collections.emptyList(), details);

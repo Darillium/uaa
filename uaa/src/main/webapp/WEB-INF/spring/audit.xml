@@ -25,7 +25,7 @@
         <constructor-arg ref="jdbcAuditService" />
     </bean>
 
-    <bean id="jdbcAuditService" class="org.cloudfoundry.identity.uaa.audit.JdbcUnsuccessfulLoginCountingAuditService">
+    <bean id="jdbcAuditService" class="org.cloudfoundry.identity.uaa.audit.JdbcFailedLoginCountingAuditService">
         <constructor-arg index="0" ref="jdbcTemplate" />
         <property name="timeService" ref="timeService"/>
     </bean>

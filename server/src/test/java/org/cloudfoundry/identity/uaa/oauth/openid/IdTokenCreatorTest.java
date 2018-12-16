@@ -1,16 +1,16 @@
 package org.cloudfoundry.identity.uaa.oauth.openid;
 
-import org.cloudfoundry.identity.uaa.oauth.TokenEndpointBuilder;
 import org.cloudfoundry.identity.uaa.oauth.TokenValidityResolver;
 import org.cloudfoundry.identity.uaa.oauth.token.ClaimConstants;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
-import org.cloudfoundry.identity.uaa.util.TimeService;
 import org.cloudfoundry.identity.uaa.util.UaaTokenUtils;
 import org.cloudfoundry.identity.uaa.zone.ClientServicesExtension;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.hamcrest.Matchers;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -20,14 +20,18 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.cloudfoundry.identity.uaa.oauth.client.ClientConstants.TOKEN_SALT;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -125,7 +129,7 @@ public class IdTokenCreatorTest {
             .withGivenName(givenName)
             .withFamilyName(familyName)
             .withPhoneNumber(phoneNumber)
-            .withId("id1234")
+            .withId("id")
             .withEmail("spongebob@krustykrab.com")
             .withUsername(userName)
             .withPreviousLogonSuccess(previousLogonTime)
@@ -133,7 +137,8 @@ public class IdTokenCreatorTest {
             .withOrigin(origin)
         );
 
-        iatDate = new Date(1L);
+        DateTimeUtils.setCurrentMillisFixed(1l);
+        iatDate = DateTime.now().toDate();
 
         TokenValidityResolver tokenValidityResolver = mock(TokenValidityResolver.class);
         when(tokenValidityResolver.resolve(clientId)).thenReturn(expDate);
@@ -172,10 +177,7 @@ public class IdTokenCreatorTest {
         clientDetails.setAdditionalInformation(additionalInfo);
         when(clientDetailsService.loadClientByClientId(clientId, zoneId)).thenReturn(clientDetails);
 
-        TimeService timeService = mock(TimeService.class);
-        when(timeService.getCurrentDate()).thenCallRealMethod();
-        when(timeService.getCurrentTimeMillis()).thenReturn(1L);
-        tokenCreator = new IdTokenCreator(new TokenEndpointBuilder(uaaUrl), timeService, tokenValidityResolver, uaaUserDatabase, clientDetailsService, excludedClaims);
+        tokenCreator = new IdTokenCreator(uaaUrl, tokenValidityResolver, uaaUserDatabase, clientDetailsService, excludedClaims);
     }
 
     @After
@@ -377,5 +379,12 @@ public class IdTokenCreatorTest {
         IdToken idToken = tokenCreator.create(clientId, userId, userAuthenticationData);
 
         assertThat(idToken.iss, is("http://myzone.localhost:8080/uaa/oauth/token"));
+    }
+
+    @Test(expected = IdTokenCreationException.class)
+    public void whenIssuerUrlIsInvalid_throwsRuntimeException() throws Exception {
+        when(UaaTokenUtils.constructTokenEndpointUrl(uaaUrl)).thenThrow(URISyntaxException.class);
+
+        tokenCreator.create(clientId, userId, userAuthenticationData);
     }
 }

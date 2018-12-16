@@ -131,9 +131,11 @@ public class JdbcScimGroupProvisioning extends AbstractQueryable<ScimGroup>
         GROUP_MEMBERSHIP_TABLE
     );
 
+
     public static final String DELETE_EXTERNAL_GROUP_BY_PROVIDER = String.format(
         "delete from %s where identity_zone_id = ? and origin = ?",
-        EXTERNAL_GROUP_TABLE
+        EXTERNAL_GROUP_TABLE,
+        GROUP_TABLE
     );
 
     public static final String DELETE_MEMBER_SQL = String.format(

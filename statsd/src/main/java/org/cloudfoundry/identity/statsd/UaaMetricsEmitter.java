@@ -77,10 +77,7 @@ public class UaaMetricsEmitter {
             String prefix = entry.getKey() + ".";
             MBeanMap properties = (MBeanMap) entry.getValue();
             if (properties != null) {
-                properties.entrySet()
-                        .stream()
-                        .filter(e -> e.getValue() != null && e.getValue() instanceof Integer)
-                        .forEach(e -> statsDClient.gauge(prefix+e.getKey(), ((Integer) e.getValue()).longValue()));
+                properties.entrySet().stream().filter(e -> e.getValue() != null && e.getValue() instanceof Integer).forEach(e -> statsDClient.gauge(prefix+e.getKey(), (Integer) e.getValue()));
             }
         }
     }

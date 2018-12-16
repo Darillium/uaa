@@ -260,6 +260,7 @@ public class LoginServerSecurityIntegrationTests {
         params.remove("username");
         @SuppressWarnings("rawtypes")
         ResponseEntity<Map> response = serverRunning.postForMap(serverRunning.getAuthorizationUri(), params, headers);
+        // TODO: should be 302
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         @SuppressWarnings("unchecked")
         Map<String, String> results = response.getBody();
@@ -277,6 +278,7 @@ public class LoginServerSecurityIntegrationTests {
         params.set("given_name", "Mabel");
         @SuppressWarnings("rawtypes")
         ResponseEntity<Map> response = serverRunning.postForMap(serverRunning.getAuthorizationUri(), params, headers);
+        // TODO: should be 302
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         @SuppressWarnings("unchecked")
         Map<String, String> results = response.getBody();

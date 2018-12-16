@@ -76,9 +76,9 @@ public class ScimGroup extends ScimCore<ScimGroup> {
         this(null,name,null);
     }
 
-    public ScimGroup(String id, String displayName, String zoneId) {
+    public ScimGroup(String id, String name, String zoneId) {
         super(id);
-        this.displayName = displayName;
+        this.displayName = name;
         this.zoneId = zoneId;
     }
 

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
+import org.cloudfoundry.identity.uaa.mfa.JdbcUserGoogleMfaCredentialsProvisioning;
 import org.cloudfoundry.identity.uaa.mfa.MfaProvider;
 import org.cloudfoundry.identity.uaa.mfa.UserGoogleMfaCredentials;
 import org.cloudfoundry.identity.uaa.mfa.UserGoogleMfaCredentialsProvisioning;
@@ -61,35 +62,34 @@ import org.springframework.util.StringUtils;
 
 import static org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils.createMfaProvider;
 import static org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils.getClientCredentialsOAuthAccessToken;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_IMPLICIT;
 import static org.junit.Assert.assertNull;
 import static org.springframework.util.StringUtils.hasText;
 
 public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest {
 
     public static final String SECRET = "secret";
-    static final String GRANT_TYPES = "password,implicit,client_credentials,authorization_code,refresh_token";
-    protected static final String TEST_REDIRECT_URI = "http://test.example.org/redirect";
+    public static final String GRANT_TYPES = "password,implicit,client_credentials,authorization_code,refresh_token";
+    public static final String TEST_REDIRECT_URI = "http://test.example.org/redirect";
 
-    ClientServicesExtension clientDetailsService;
+    protected ClientServicesExtension clientDetailsService;
     protected JdbcScimUserProvisioning userProvisioning;
-    JdbcScimGroupProvisioning groupProvisioning;
-    JdbcScimGroupMembershipManager groupMembershipManager;
-    UaaTokenServices tokenServices;
-    Set<String> defaultAuthorities;
+    protected JdbcScimGroupProvisioning groupProvisioning;
+    protected JdbcScimGroupMembershipManager groupMembershipManager;
+    protected UaaTokenServices tokenServices;
+    protected Set<String> defaultAuthorities;
 
-    IdentityZoneProvisioning identityZoneProvisioning;
-    JdbcScimUserProvisioning jdbcScimUserProvisioning;
+    protected IdentityZoneProvisioning identityZoneProvisioning;
+    protected JdbcScimUserProvisioning jdbcScimUserProvisioning;
     protected IdentityProviderProvisioning identityProviderProvisioning;
     protected String adminToken;
-    RevocableTokenProvisioning tokenProvisioning;
+    protected RevocableTokenProvisioning tokenProvisioning;
     protected RandomValueStringGenerator generator = new RandomValueStringGenerator();
 
     IdentityZone zone;
-    private UaaUserDatabase userDb;
+    protected UaaUserDatabase userDb;
     protected MfaProvider mfaProvider;
-    private IdentityZoneConfiguration uaaZoneConfig;
-    private UserGoogleMfaCredentialsProvisioning authenticator;
+    protected IdentityZoneConfiguration uaaZoneConfig;
+    protected UserGoogleMfaCredentialsProvisioning authenticator;
     protected UserGoogleMfaCredentials credentials;
 
     @Before
@@ -117,7 +117,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
     }
 
     @After
-    public void cleanup() {
+    public void cleanup() throws Exception {
         if (uaaZoneConfig!=null) {
             uaaZoneConfig.getMfaConfig().setEnabled(false).setProviderName(null);
             MockMvcUtils.setZoneConfiguration(getWebApplicationContext(), IdentityZone.getUaa().getId(), uaaZoneConfig);
@@ -125,7 +125,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         }
     }
 
-    void deleteMfaRegistrations() {
+    protected void deleteMfaRegistrations() throws Exception {
         getWebApplicationContext().getBean(JdbcTemplate.class).update("DELETE FROM user_google_mfa_credentials");
     }
 
@@ -134,7 +134,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         String userId = userDb.retrieveUserByName("marissa", OriginKeys.UAA).getId();
         setupForMfaPasswordGrant(userId);
     }
-    protected void setupForMfaPasswordGrant(String userId) throws Exception {
+    public void setupForMfaPasswordGrant(String userId) throws Exception {
         userDb = getWebApplicationContext().getBean(UaaUserDatabase.class);
         uaaZoneConfig = MockMvcUtils.getZoneConfiguration(getWebApplicationContext(), IdentityZone.getUaa().getId());
 
@@ -157,7 +157,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         authenticator.saveUserCredentials(credentials);
     }
 
-    protected String setUpUserForPasswordGrant() {
+    public String setUpUserForPasswordGrant() throws Exception {
         String username = "testuser" + generator.generate();
         String userScopes = "uaa.user";
         ScimUser user = setUpUser(username, userScopes, OriginKeys.UAA, IdentityZone.getUaa().getId());
@@ -168,11 +168,11 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         return username;
     }
 
-    IdentityZone setupIdentityZone(String subdomain) {
+    protected IdentityZone setupIdentityZone(String subdomain) {
         return setupIdentityZone(subdomain, UserConfig.DEFAULT_ZONE_GROUPS);
     }
 
-    IdentityZone setupIdentityZone(String subdomain, List<String> defaultUserGroups) {
+    protected IdentityZone setupIdentityZone(String subdomain, List<String> defaultUserGroups) {
         IdentityZone zone = new IdentityZone();
         zone.getConfig().getUserConfig().setDefaultGroups(defaultUserGroups);
         zone.getConfig().getTokenPolicy().setKeys(Collections.singletonMap(subdomain+"_key", "key_for_"+subdomain));
@@ -187,10 +187,10 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         return zone;
     }
 
-    IdentityProvider setupIdentityProvider() {
+    protected IdentityProvider setupIdentityProvider() {
         return setupIdentityProvider(OriginKeys.UAA);
     }
-    IdentityProvider setupIdentityProvider(String origin) {
+    protected IdentityProvider setupIdentityProvider(String origin) {
         IdentityProvider defaultIdp = new IdentityProvider();
         defaultIdp.setName(origin);
         defaultIdp.setType(origin);
@@ -220,7 +220,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
             IdentityZoneHolder.set(zone);
         }
         BaseClientDetails c = new BaseClientDetails(id, "", scopes, grantTypes, authorities);
-        if (!GRANT_TYPE_IMPLICIT.equals(grantTypes)) {
+        if (!"implicit".equals(grantTypes)) {
             c.setClientSecret(SECRET);
         }
         c.setRegisteredRedirectUri(new HashSet<>(Arrays.asList(TEST_REDIRECT_URI)));
@@ -243,14 +243,6 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         } finally {
             IdentityZoneHolder.set(original);
         }
-    }
-
-    void deleteClient(String clientId, String zoneId) {
-        clientDetailsService.removeClientDetails(clientId, zoneId);
-    }
-
-    void deleteUser(ScimUser user, String zoneId) {
-        userProvisioning.delete(user.getId(), user.getVersion(), zoneId);
     }
 
     protected ScimUser setUpUser(String username, String scopes, String origin, String zoneId) {
@@ -308,7 +300,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         return user;
     }
 
-    private ScimGroupMember addMember(ScimUser user, ScimGroup group) {
+    protected ScimGroupMember addMember(ScimUser user, ScimGroup group) {
         ScimGroupMember gm = new ScimGroupMember(user.getId());
         try {
             return groupMembershipManager.addMember(group.getId(), gm, IdentityZoneHolder.get().getId());
@@ -317,7 +309,7 @@ public abstract class AbstractTokenMockMvcTests extends InjectedMockContextTest 
         }
     }
 
-    private ScimGroup createIfNotExist(String scope, String zoneId) {
+    protected ScimGroup createIfNotExist(String scope, String zoneId) {
         List<ScimGroup> exists = groupProvisioning.query("displayName eq \"" + scope + "\" and identity_zone_id eq \""+zoneId+"\"", IdentityZoneHolder.get().getId());
         if (exists.size() > 0) {
             return exists.get(0);

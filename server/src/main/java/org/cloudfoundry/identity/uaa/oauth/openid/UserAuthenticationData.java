@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class UserAuthenticationData {
-    public final Date authTime;
-    public final Set<String> authenticationMethods;
+    public final Date time;
+    public final Set<String> methods;
     public final Set<String> contextClassRef;
     public final Set<String> scopes;
     public final Set<String> roles;
@@ -16,8 +16,8 @@ public class UserAuthenticationData {
     public final String grantType;
     public final String jti;
 
-    public UserAuthenticationData(Date authTime,
-                                  Set<String> authenticationMethods,
+    public UserAuthenticationData(Date time,
+                                  Set<String> methods,
                                   Set<String> contextClassRef,
                                   Set<String> scopes,
                                   Set<String> roles,
@@ -25,8 +25,8 @@ public class UserAuthenticationData {
                                   String nonce,
                                   String grantType,
                                   String jti) {
-        this.authTime = authTime;
-        this.authenticationMethods = authenticationMethods;
+        this.time = time;
+        this.methods = methods;
         this.contextClassRef = contextClassRef;
         this.scopes = scopes;
         this.roles = roles;

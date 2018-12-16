@@ -368,14 +368,10 @@ public class LoginInfoEndpoint {
             UaaLoginHint uaaLoginHint = UaaLoginHint.parseRequestParameter(loginHint);
             if (uaaLoginHint != null) {
                 if (OriginKeys.UAA.equals(uaaLoginHint.getOrigin()) || OriginKeys.LDAP.equals(uaaLoginHint.getOrigin())) {
-                    if (allowedIdps == null || allowedIdps.contains(uaaLoginHint.getOrigin())) {
-                        // in case of uaa/ldap, pass value to login page
-                        model.addAttribute("login_hint",loginHint);
-                        samlIdps.clear();
-                        oauthIdentityProviderDefinitions.clear();
-                    } else {
-                        model.addAttribute("error", "invalid_login_hint");
-                    }
+                    // in case of uaa/ldap, pass value to login page
+                    model.addAttribute("login_hint",loginHint);
+                    samlIdps.clear();
+                    oauthIdentityProviderDefinitions.clear();
                 } else {
                     // for oidc/saml, trigger the redirect
                     List<Map.Entry<String, AbstractIdentityProviderDefinition>> hintIdps = combinedIdps.entrySet().stream().filter(idp -> idp.getKey().equals(uaaLoginHint.getOrigin())).collect(Collectors.toList());
@@ -398,41 +394,19 @@ public class LoginInfoEndpoint {
             }
         }
 
-        String defaultIdentityProvider = IdentityZoneHolder.get().getConfig().getDefaultIdentityProvider();
-        boolean discoveryEnabled = IdentityZoneHolder.get().getConfig().isIdpDiscoveryEnabled();
-        boolean discoveryPerformed = Boolean.parseBoolean(request.getParameter("discoveryPerformed"));
-
-        if (idpForRedirect == null && (discoveryPerformed || !discoveryEnabled) && defaultIdentityProvider != null && !model.containsAttribute("login_hint")) { //Default set, no login_hint given, discovery disabled or performed
-            if (!OriginKeys.UAA.equals(defaultIdentityProvider) && !OriginKeys.LDAP.equals(defaultIdentityProvider)) {
-                if (combinedIdps.containsKey(defaultIdentityProvider)) {
-                    idpForRedirect = combinedIdps.entrySet().stream().filter(entry -> defaultIdentityProvider.equals(entry.getKey())).findAny().orElse(null);
-                }
-            } else if (allowedIdps == null || allowedIdps.contains(defaultIdentityProvider)) {
-                UaaLoginHint loginHint = new UaaLoginHint(defaultIdentityProvider);
-                model.addAttribute("login_hint", loginHint.toString());
-                samlIdps.clear();
-                oauthIdentityProviderDefinitions.clear();
-            }
-        }
-
         if(idpForRedirect == null && !jsonResponse && !fieldUsernameShow && combinedIdps.size() == 1) {
             idpForRedirect = combinedIdps.entrySet().stream().findAny().get();
         }
 
         String externalRedirect;
 
-        if (idpForRedirect != null && (externalRedirect = redirectToExternalProvider(idpForRedirect.getValue(), idpForRedirect.getKey(), request)) != null && !jsonResponse) {
+        if (idpForRedirect != null && (externalRedirect = redirectToExternalProvider(idpForRedirect.getValue(), idpForRedirect.getKey(), request)) != null) {
             return externalRedirect;
         }
 
         boolean linkCreateAccountShow = fieldUsernameShow;
-        if (fieldUsernameShow && (allowedIdps != null)) {
-            if (!allowedIdps.contains(OriginKeys.UAA)) {
-                linkCreateAccountShow = false;
-                model.addAttribute("login_hint", new UaaLoginHint(OriginKeys.LDAP).toString());
-            } else if (!allowedIdps.contains(OriginKeys.LDAP)) {
-                model.addAttribute("login_hint", new UaaLoginHint(OriginKeys.UAA).toString());
-            }
+        if (fieldUsernameShow && (allowedIdps != null && !allowedIdps.contains(OriginKeys.UAA))) {
+            linkCreateAccountShow = false;
         }
         String zonifiedEntityID = getZonifiedEntityId();
         Map links = getLinksInfo();
@@ -514,14 +488,13 @@ public class LoginInfoEndpoint {
                 model.addAttribute(UaaSavedRequestAwareAuthenticationSuccessHandler.FORM_REDIRECT_PARAMETER, formRedirectUri);
             }
 
+            boolean discoveryEnabled = IdentityZoneHolder.get().getConfig().isIdpDiscoveryEnabled();
             boolean accountChooserEnabled = IdentityZoneHolder.get().getConfig().isAccountChooserEnabled();
+            boolean discoveryPerformed = Boolean.parseBoolean(request.getParameter("discoveryPerformed"));
             boolean otherAccountSignIn = Boolean.parseBoolean(request.getParameter("otherAccountSignIn"));
             boolean savedAccountsEmpty = getSavedAccounts(request.getCookies(), SavedAccountOption.class).isEmpty();
 
-            if (discoveryEnabled) {
-                if (model.containsAttribute("login_hint")) {
-                    return goToPasswordPage(null, model);
-                }
+            if (discoveryEnabled && !model.containsAttribute("login_hint")) {
                 boolean accountChooserNeeded = accountChooserEnabled
                     && !(otherAccountSignIn || savedAccountsEmpty)
                     && !discoveryPerformed;
@@ -706,12 +679,11 @@ public class LoginInfoEndpoint {
         if (StringUtils.hasText(loginHint)) {
             model.addAttribute("login_hint", loginHint);
         }
-        List<IdentityProvider> identityProviders = DomainFilter.filter(providerProvisioning.retrieveActive(IdentityZoneHolder.get().getId()), clientDetails, email, false);
+        List<IdentityProvider> identityProviders = DomainFilter.filter(providerProvisioning.retrieveActive(IdentityZoneHolder.get().getId()), clientDetails, email);
 
         if (!StringUtils.hasText(skipDiscovery) && identityProviders.size() == 1) {
             IdentityProvider matchedIdp = identityProviders.get(0);
             if (matchedIdp.getType().equals(UAA)) {
-                model.addAttribute("login_hint", new UaaLoginHint("uaa").toString());
                 return goToPasswordPage(email, model);
             } else {
                 String redirectUrl;

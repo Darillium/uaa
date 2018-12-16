@@ -65,6 +65,7 @@ public class AuthorizeEndpointDocs extends InjectedMockContextTest {
         principal = new UaaAuthentication(uaaPrincipal, Arrays.asList(UaaAuthority.fromAuthorities("uaa.user")), null);
     }
 
+
     @Test
     public void browserCodeRequest() throws Exception {
         MockHttpSession session = new MockHttpSession();

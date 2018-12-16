@@ -17,7 +17,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.client.utils.URIUtils;
 import org.cloudfoundry.identity.uaa.authentication.UaaPrincipal;
 import org.cloudfoundry.identity.uaa.oauth.client.ClientConstants;
-import org.cloudfoundry.identity.uaa.oauth.token.CompositeToken;
+import org.cloudfoundry.identity.uaa.oauth.token.CompositeAccessToken;
 import org.cloudfoundry.identity.uaa.util.UaaHttpRequestUtils;
 import org.cloudfoundry.identity.uaa.zone.ClientServicesExtension;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
@@ -93,9 +93,6 @@ import java.util.Set;
 import static java.util.Arrays.stream;
 import static java.util.Collections.EMPTY_SET;
 import static java.util.Optional.ofNullable;
-import static org.cloudfoundry.identity.uaa.oauth.token.ClaimConstants.GRANT_TYPE;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_IMPLICIT;
 import static org.cloudfoundry.identity.uaa.util.JsonUtils.hasText;
 import static org.cloudfoundry.identity.uaa.util.UaaUrlUtils.addFragmentComponent;
 import static org.cloudfoundry.identity.uaa.util.UaaUrlUtils.addQueryParameter;
@@ -372,11 +369,11 @@ public class UaaAuthorizationEndpoint extends AbstractEndpoint implements Authen
 
     protected String deriveGrantTypeFromResponseType(Set<String> responseTypes) {
         if (responseTypes.contains("token")) {
-            return GRANT_TYPE_IMPLICIT;
+            return "implicit";
         } else if (responseTypes.size() == 1 && responseTypes.contains("id_token")) {
-            return GRANT_TYPE_IMPLICIT;
+            return "implicit";
         }
-        return GRANT_TYPE_AUTHORIZATION_CODE;
+        return "authorization_code";
     }
 
     // We need explicit approval from the user.
@@ -395,10 +392,7 @@ public class UaaAuthorizationEndpoint extends AbstractEndpoint implements Authen
     ) {
         OAuth2AccessToken accessToken;
         try {
-            TokenRequest tokenRequest = getOAuth2RequestFactory().createTokenRequest(authorizationRequest, GRANT_TYPE_IMPLICIT);
-            Map<String, String> requestParameters = new HashMap<>(authorizationRequest.getRequestParameters());
-            requestParameters.put(GRANT_TYPE, grantType);
-            authorizationRequest.setRequestParameters(requestParameters);
+            TokenRequest tokenRequest = getOAuth2RequestFactory().createTokenRequest(authorizationRequest, "implicit");
             OAuth2Request storedOAuth2Request = getOAuth2RequestFactory().createOAuth2Request(authorizationRequest);
             accessToken = getAccessTokenForImplicitGrantOrHybrid(tokenRequest, storedOAuth2Request, grantType);
             if (accessToken == null) {
@@ -426,9 +420,9 @@ public class UaaAuthorizationEndpoint extends AbstractEndpoint implements Authen
         // one thread removes the token request before another has a chance to redeem it.
         synchronized (this.implicitLock) {
             switch (grantType) {
-                case GRANT_TYPE_IMPLICIT:
+                case "implicit":
                     return getTokenGranter().grant(grantType, new ImplicitTokenRequest(tokenRequest, storedOAuth2Request));
-                case GRANT_TYPE_AUTHORIZATION_CODE:
+                case "authorization_code":
                     return getHybridTokenGranterForAuthCode().grant(grantType, new ImplicitTokenRequest(tokenRequest, storedOAuth2Request));
                 default:
                     throw new OAuth2Exception(OAuth2Exception.INVALID_GRANT);
@@ -475,9 +469,9 @@ public class UaaAuthorizationEndpoint extends AbstractEndpoint implements Authen
             url.append("&access_token=").append(encode(accessToken.getValue()));
         }
 
-        if (accessToken instanceof CompositeToken &&
-          authorizationRequest.getResponseTypes().contains(CompositeToken.ID_TOKEN)) {
-            url.append("&").append(CompositeToken.ID_TOKEN).append("=").append(encode(((CompositeToken) accessToken).getIdTokenValue()));
+        if (accessToken instanceof CompositeAccessToken &&
+          authorizationRequest.getResponseTypes().contains(CompositeAccessToken.ID_TOKEN)) {
+            url.append("&").append(CompositeAccessToken.ID_TOKEN).append("=").append(encode(((CompositeAccessToken) accessToken).getIdTokenValue()));
         }
 
         if (authorizationRequest.getResponseTypes().contains("code")) {

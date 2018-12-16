@@ -1,12 +1,23 @@
+/*******************************************************************************
+ *     Cloud Foundry
+ *     Copyright (c) [2009-2016] Pivotal Software, Inc. All Rights Reserved.
+ *
+ *     This product is licensed to you under the Apache License, Version 2.0 (the "License").
+ *     You may not use this product except in compliance with the License.
+ *
+ *     This product includes a number of subcomponents with
+ *     separate copyright notices and license terms. Your use of these
+ *     subcomponents is subject to the terms and conditions of the
+ *     subcomponent's license, as noted in the LICENSE file.
+ *******************************************************************************/
 package org.cloudfoundry.identity.uaa.scim.endpoints;
 
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
 import org.cloudfoundry.identity.uaa.mock.InjectedMockContextTest;
-import org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils;
-import org.cloudfoundry.identity.uaa.provider.IdentityProvider;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.test.UaaTestAccounts;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
+import org.cloudfoundry.identity.uaa.provider.IdentityProvider;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
 import org.junit.After;
 import org.junit.Before;
@@ -20,10 +31,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.cloudfoundry.identity.uaa.mock.util.MockMvcUtils.utils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
 
@@ -34,9 +50,10 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     private String scimLookupIdUserToken;
     private String adminToken;
 
+    private int testUserCount = 25, pageSize = 5;
     private static String[][] testUsers;
 
-    private boolean originalIsUserIdConversionEndpointsEnabled;
+    private boolean originalEnabled;
 
     private ScimUser user;
 
@@ -47,25 +64,25 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
         user = new ScimUser(null, new RandomValueStringGenerator().generate()+"@test.org", "PasswordResetUserFirst", "PasswordResetUserLast");
         user.setPrimaryEmail(user.getUserName());
         user.setPassword("secr3T");
-        user = MockMvcUtils.createUser(getMockMvc(), adminToken, user);
+        user = utils().createUser(getMockMvc(), adminToken, user);
 
-        originalIsUserIdConversionEndpointsEnabled = getWebApplicationContext().getBean(UserIdConversionEndpoints.class).isEnabled();
+        originalEnabled = getWebApplicationContext().getBean(UserIdConversionEndpoints.class).isEnabled();
         getWebApplicationContext().getBean(UserIdConversionEndpoints.class).setEnabled(true);
-        List<String> scopes = Arrays.asList("scim.userids", "cloud_controller.read");
-        MockMvcUtils.createClient(this.getMockMvc(), adminToken, clientId, clientSecret, Collections.singleton("scim"), scopes, Arrays.asList("client_credentials", "password"), "uaa.none");
+        List<String> scopes = Arrays.asList("scim.userids","scim.me");
+        utils().createClient(this.getMockMvc(), adminToken, clientId, clientSecret, Collections.singleton("scim"), scopes, Arrays.asList(new String[]{"client_credentials", "password"}), "uaa.none");
         scimLookupIdUserToken = testClient.getUserOAuthAccessToken(clientId, clientSecret, user.getUserName(), "secr3T", "scim.userids");
         if (testUsers==null) {
-            testUsers = createUsers(adminToken);
+            testUsers = createUsers(adminToken, testUserCount);
         }
     }
 
     @After
-    public void restoreEnabled() {
-        getWebApplicationContext().getBean(UserIdConversionEndpoints.class).setEnabled(originalIsUserIdConversionEndpointsEnabled);
+    public void restoreEnabled() throws Exception {
+        getWebApplicationContext().getBean(UserIdConversionEndpoints.class).setEnabled(originalEnabled);
     }
 
     @Test
-    public void lookupIdFromUsername() throws Exception {
+    public void testLookupIdFromUsername() throws Exception {
         String username = UaaTestAccounts.standard(null).getUserName();
 
         MockHttpServletRequestBuilder post = getIdLookupRequest(scimLookupIdUserToken, username, "eq");
@@ -78,7 +95,7 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     }
 
     @Test
-    public void lookupUsingOnlyOrigin() throws Exception {
+    public void testLookupUsingOnlyOrigin() throws Exception {
         String filter = "origin eq \"uaa\"";
         MockHttpServletRequestBuilder post = post("/ids/Users")
             .header("Authorization", "Bearer " + scimLookupIdUserToken)
@@ -130,7 +147,18 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     }
 
     @Test
-    public void lookupIdFromUsernameWithNoToken() throws Exception {
+    public void testLookupIdFromUsernameWithIncorrectScope() throws Exception {
+        String token = testClient.getUserOAuthAccessToken(clientId, clientSecret, user.getUserName(), "secr3T", "scim.me");
+        String username = UaaTestAccounts.standard(null).getUserName();
+
+        MockHttpServletRequestBuilder post = getIdLookupRequest(token, username, "eq");
+
+        getMockMvc().perform(post)
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void testLookupIdFromUsernameWithNoToken() throws Exception {
         String username = UaaTestAccounts.standard(null).getUserName();
 
         MockHttpServletRequestBuilder post = post("/ids/Users")
@@ -144,7 +172,7 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     }
 
     @Test
-    public void lookupIdFromUsernameWithInvalidFilter() throws Exception {
+    public void testLookupIdFromUsernameWithInvalidFilter() throws Exception {
         String username = UaaTestAccounts.standard(null).getUserName();
 
         MockHttpServletRequestBuilder post = getIdLookupRequest(scimLookupIdUserToken, username, "sw");
@@ -159,11 +187,12 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     }
 
     @Test
-    public void lookupUserNameFromId() throws Exception {
-        String id = testUsers[0][0];
-        String email =  testUsers[0][1];
+    public void testLookupUserNameFromId() throws Exception {
+        String[][] user = createUsers(adminToken, 1);
+        String id = user[0][0];
+        String email =  user[0][1];
 
-        MockHttpServletRequestBuilder post = getUsernameLookupRequest(scimLookupIdUserToken, id);
+        MockHttpServletRequestBuilder post = getUsernameLookupRequest(scimLookupIdUserToken, id, "eq");
 
         String body = getMockMvc().perform(post)
             .andExpect(status().isOk())
@@ -173,41 +202,32 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     }
 
     @Test
-    public void lookupIdFromUsernameWithIncorrectScope() throws Exception {
-        String token = testClient.getUserOAuthAccessToken(clientId, clientSecret, user.getUserName(), "secr3T", "cloud_controller.read");
-        String username = UaaTestAccounts.standard(null).getUserName();
+    public void testLookupUserNameFromIdWithIncorrectScope() throws Exception {
+        String token = testClient.getUserOAuthAccessToken(clientId, clientSecret, user.getUserName(), "secr3T", "scim.me");
+        String[][] user = createUsers(adminToken, 1);
+        String id = user[0][0];
 
-        MockHttpServletRequestBuilder post = getIdLookupRequest(token, username, "eq");
-
-        getMockMvc().perform(post)
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    public void lookupUserNameFromIdWithIncorrectScope() throws Exception {
-        String token = testClient.getUserOAuthAccessToken(clientId, clientSecret, user.getUserName(), "secr3T", "cloud_controller.read");
-        String id = testUsers[0][0];
-
-        MockHttpServletRequestBuilder post = getUsernameLookupRequest(token, id);
+        MockHttpServletRequestBuilder post = getUsernameLookupRequest(token, id, "eq");
 
         getMockMvc().perform(post)
             .andExpect(status().isForbidden());
     }
 
     @Test
-    public void lookupIdFromUsernamePagination() throws Exception {
+    public void testLookupIdFromUsernamePagination() throws Exception {
         StringBuilder builder = new StringBuilder();
-        String[] usernames = new String[25];
+        String[] usernames = new String[testUserCount];
+        String[] ids = new String[testUserCount];
         int index = 0;
         for (String[] entry : testUsers) {
             builder.append("userName eq \"" + entry[1] + "\"");
             builder.append(" or ");
-            usernames[index++] = entry[1];
+            usernames[index] = entry[1];
+            ids[index++] = entry[0];
         }
         String filter = builder.substring(0, builder.length()-4);
 
-        int pageSize = 5;
-        for (int i = 0; i< testUsers.length; i+= pageSize) {
+        for (int i=0; i< testUserCount; i+= pageSize) {
             MockHttpServletRequestBuilder post = getIdLookupRequest(scimLookupIdUserToken, filter, i+1, pageSize);
             String[] expectedUsername = new String[pageSize];
             System.arraycopy(usernames, i, expectedUsername, 0, pageSize);
@@ -220,8 +240,10 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
     }
 
     private MockHttpServletRequestBuilder getIdLookupRequest(String token, String username, String operator) {
-        String filter = String.format("username %s \"%s\"", operator, username);
-        return getIdLookupRequest(token, filter, 1, 100);
+        if (operator==null) {
+            operator = "eq";
+        }
+        return getIdLookupRequest(token, "username " + operator + " \"" + username + "\"", 1, 100);
     }
 
     private MockHttpServletRequestBuilder getIdLookupRequest(String token, String filter, int startIndex, int count) {
@@ -233,26 +255,28 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
             .param("count", String.valueOf(count));
     }
 
-    private MockHttpServletRequestBuilder getUsernameLookupRequest(String token, String id) {
-        String filter = String.format("id eq \"%s\"", id);
+    private MockHttpServletRequestBuilder getUsernameLookupRequest(String token, String id,String operator) {
+        if (operator==null) {
+            operator = "eq";
+        }
         return post("/ids/Users")
             .header("Authorization", "Bearer " + token)
             .accept(APPLICATION_JSON)
-            .param("filter", filter);
+            .param("filter", "id "+operator+" \""+id+"\"");
     }
 
-    private void validateLookupResults(String[] usernames, String body) {
+    private void validateLookupResults(String[] usernames, String body) throws java.io.IOException {
         Map<String, Object> map = JsonUtils.readValue(body, Map.class);
-        assertNotNull("Response should contain 'resources' object", map.get("resources"));
-        assertNotNull("Response should contain 'startIndex' object", map.get("startIndex"));
-        assertNotNull("Response should contain 'itemsPerPage' object", map.get("itemsPerPage"));
-        assertNotNull("Response should contain 'totalResults' object", map.get("totalResults"));
+        assertTrue("Response should contain 'resources' object", map.get("resources")!=null);
+        assertTrue("Response should contain 'startIndex' object", map.get("startIndex")!=null);
+        assertTrue("Response should contain 'itemsPerPage' object", map.get("itemsPerPage")!=null);
+        assertTrue("Response should contain 'totalResults' object", map.get("totalResults")!=null);
         List<Map<String, Object>> resources = (List<Map<String, Object>>) map.get("resources");
         assertEquals(usernames.length, resources.size());
         for (Map<String, Object> user : resources) {
-            assertNotNull("Response should contain 'origin' object", user.get(OriginKeys.ORIGIN));
-            assertNotNull("Response should contain 'id' object", user.get("id"));
-            assertNotNull("Response should contain 'userName' object", user.get("userName"));
+            assertTrue("Response should contain 'origin' object", user.get(OriginKeys.ORIGIN)!=null);
+            assertTrue("Response should contain 'id' object", user.get("id")!=null);
+            assertTrue("Response should contain 'userName' object", user.get("userName")!=null);
             String userName = (String)user.get("userName");
             boolean found = false;
             for (String s : usernames) {
@@ -276,10 +300,9 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
         }
     }
 
-    private String[][] createUsers(String token) throws Exception {
-        final int count = 25;
+    private String[][] createUsers(String token, int count) throws Exception {
         String[][] result = new String[count][];
-        for (int i=0; i< count; i++) {
+        for (int i=0; i<count; i++) {
             String id = i>99 ? String.valueOf(i) : i > 9 ? "0" + String.valueOf(i) : "00" + String.valueOf(i);
             String email = "joe"+id+"@" + generator.generate().toLowerCase() + ".com";
 
@@ -313,13 +336,13 @@ public class ScimUserLookupMockMvcTests extends InjectedMockContextTest {
         String tokenToCreateIdp = testClient.getClientCredentialsOAuthAccessToken("login", "loginsecret", "idps.write");
         IdentityProvider inactiveIdentityProvider = MultitenancyFixture.identityProvider(originKey, "uaa");
         inactiveIdentityProvider.setActive(false);
-        MockMvcUtils.createIdpUsingWebRequest(getMockMvc(), null, tokenToCreateIdp, inactiveIdentityProvider, status().isCreated());
+        utils().createIdpUsingWebRequest(getMockMvc(), null, tokenToCreateIdp, inactiveIdentityProvider, status().isCreated());
 
         ScimUser scimUser = new ScimUser(null, new RandomValueStringGenerator().generate()+"@test.org", "test", "test");
         scimUser.setPrimaryEmail(scimUser.getUserName());
         scimUser.setPassword("secr3T");
         scimUser.setOrigin(originKey);
-        scimUser = MockMvcUtils.createUserInZone(getMockMvc(), adminToken, scimUser, "");
+        scimUser = utils().createUserInZone(getMockMvc(), adminToken, scimUser, "");
         return scimUser;
     }
 }

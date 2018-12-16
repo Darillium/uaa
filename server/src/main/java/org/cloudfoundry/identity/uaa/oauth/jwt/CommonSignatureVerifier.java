@@ -14,6 +14,7 @@
  */
 package org.cloudfoundry.identity.uaa.oauth.jwt;
 
+import org.cloudfoundry.identity.uaa.oauth.KeyInfo;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.security.jwt.crypto.sign.RsaVerifier;
 import org.springframework.security.jwt.crypto.sign.SignatureVerifier;
@@ -24,15 +25,11 @@ public class CommonSignatureVerifier implements SignatureVerifier {
     public CommonSignatureVerifier(String verificationKey) {
         if(verificationKey == null) {
             throw new IllegalArgumentException("verificationKey cannot be null");
-        } else if(isAssymetricKey(verificationKey)) {
+        } else if(KeyInfo.isAssymetricKey(verificationKey)) {
             delegate = new RsaVerifier(verificationKey);
         } else {
             delegate = new MacSigner(verificationKey);
         }
-    }
-
-    private static boolean isAssymetricKey(String key) {
-        return key.startsWith("-----BEGIN");
     }
 
     @Override

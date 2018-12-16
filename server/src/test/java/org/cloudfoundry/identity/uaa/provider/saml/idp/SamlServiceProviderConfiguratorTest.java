@@ -32,7 +32,6 @@ import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.xml.parse.BasicParserPool;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -51,42 +50,44 @@ import static org.mockito.Mockito.when;
 public class SamlServiceProviderConfiguratorTest {
 
     private final SamlTestUtils samlTestUtils = new SamlTestUtils();
+
     private SamlServiceProviderConfigurator conf = null;
+
     private SamlServiceProviderProvisioning providerProvisioning;
+
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
     private SlowHttpServer slowHttpServer;
+    private RestTemplateConfig restTemplateConfig;
 
     @Before
-    public void setupSamlSpConfAndSlowHttpServer() throws Exception {
+    public void setup() throws Exception {
         samlTestUtils.initialize();
         conf = new SamlServiceProviderConfigurator();
         providerProvisioning = mock(SamlServiceProviderProvisioning.class);
         conf.setProviderProvisioning(providerProvisioning);
         conf.setParserPool(new BasicParserPool());
-
-        slowHttpServer = new SlowHttpServer();
-        TimeService mockTimeService = mock(TimeService.class);
-        when(mockTimeService.getCurrentTimeMillis()).thenAnswer(e -> System.currentTimeMillis());
-        RestTemplateConfig restTemplateConfig = new RestTemplateConfig();
-        restTemplateConfig.timeout = 120;
-        FixedHttpMetaDataProvider fixedHttpMetaDataProvider = new FixedHttpMetaDataProvider();
-        fixedHttpMetaDataProvider.setNonTrustingRestTemplate(restTemplateConfig.nonTrustingRestTemplate());
-        fixedHttpMetaDataProvider.setTrustingRestTemplate(restTemplateConfig.trustingRestTemplate());
-
-        fixedHttpMetaDataProvider.setCache(new ExpiringUrlCache(Duration.ofMinutes(10), mockTimeService, 2));
-
-        conf.setFixedHttpMetaDataProvider(fixedHttpMetaDataProvider);
     }
 
     @After
-    public void stopSlowHttpServer() {
-        slowHttpServer.stop();
+    public void cleanupTestMethod() {
+        expectedEx = ExpectedException.none();
     }
 
+    /*@Test
+    public void testAddAndUpdateAndRemoveSamlServiceProvider() throws Exception {
+        SamlServiceProvider sp = mockSamlServiceProviderForZone("uaa");
+        SamlServiceProvider spNoHeader = mockSamlServiceProviderWithoutXmlHeaderInMetadata();
+
+        conf.validateSamlServiceProvider(sp);
+        assertEquals(1, conf.getSamlServiceProviders().size());
+        conf.validateSamlServiceProvider(spNoHeader);
+        assertEquals(1, conf.getSamlServiceProviders().size());
+    }*/
+
     @Test
-    public void testValidateSamlServiceProviderWithNoNameIDFormats() {
+    public void testValidateSamlServiceProviderWithNoNameIDFormats() throws Exception {
         SamlServiceProvider sp = mockSamlServiceProvider("uaa", "");
         try {
             conf.validateSamlServiceProvider(sp);
@@ -184,13 +185,36 @@ public class SamlServiceProviderConfiguratorTest {
         }
     }
 
+    @Before
+    public void init() {
+        slowHttpServer = new SlowHttpServer();
+        ticker = mock(TimeService.class);
+        when(ticker.getCurrentTimeMillis()).thenAnswer(e -> System.currentTimeMillis());
+        RestTemplateConfig restTemplateConfig = new RestTemplateConfig();
+        restTemplateConfig.timeout = 120;
+        FixedHttpMetaDataProvider fixedHttpMetaDataProvider = new FixedHttpMetaDataProvider();
+        fixedHttpMetaDataProvider.setNonTrustingRestTemplate(restTemplateConfig.nonTrustingRestTemplate());
+        fixedHttpMetaDataProvider.setTrustingRestTemplate(restTemplateConfig.trustingRestTemplate());
+
+        fixedHttpMetaDataProvider.setCache(new ExpiringUrlCache(EXPIRING_TIME_MILLIS, ticker, 2));
+
+        conf.setFixedHttpMetaDataProvider(fixedHttpMetaDataProvider);
+    }
+
+    @After
+    public void tearDown() {
+        slowHttpServer.stop();
+    }
+    public static final int EXPIRING_TIME_MILLIS = 10 * 60 * 1000;
+    private TimeService ticker;
+
     @Test
     public void testGetExtendedMetadataDelegateUrl() throws MetadataProviderException {
         slowHttpServer.run();
         expectedEx.expect(MetadataProviderException.class);
         expectedEx.expectMessage("Unavailable Metadata Provider");
 
-        SamlServiceProvider provider = mockSamlServiceProviderMetadatauriForZone(slowHttpServer.getUrl());
+        SamlServiceProvider provider = mockSamlServiceProviderMetadatauriForZone("https://localhost:" + SlowHttpServer.PORT);
 
         conf.getExtendedMetadataDelegate(provider);
     }

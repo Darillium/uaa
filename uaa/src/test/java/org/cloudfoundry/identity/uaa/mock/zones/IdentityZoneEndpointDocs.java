@@ -158,7 +158,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
     private static final String MFA_CONFIG_PROVIDER_NAME_DESC = "The unique `name` of the MFA provider to use for this zone.";
     private static final String MFA_CONFIG_IDENTITY_PROVIDER_DESC = "Only trigger MFA when user is using an identity provider whose origin key matches one of these values";
     private static final String ZONE_ISSUER_DESC = "Issuer of this zone. Must be a valid URL.";
-    private static final String DEFAULT_IDP_DESC = "This value can be set to the origin key of an identity provider. If set, the user will be directed to this identity provider automatically if no other identity provider is discovered or selected via login_hint.";
     private static final String DEFAULT_ISSUER_URI = "http://localhost:8080/uaa";
 
     private static final HeaderDescriptor IDENTITY_ZONE_ID_HEADER = headerWithName(IdentityZoneSwitchingFilter.HEADER).description("May include this header to administer another zone if using `zones.<zoneId>.admin` or `uaa.admin` scope against the default UAA zone.").optional();
@@ -205,7 +204,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
         identityZone.getConfig().setTokenPolicy(tokenPolicy);
         IdentityZoneConfiguration brandingConfig = setBranding(identityZone.getConfig());
         identityZone.setConfig(brandingConfig);
-        identityZone.getConfig().setDefaultIdentityProvider("uaa");
         FieldDescriptor[] fieldDescriptors = {
             fieldWithPath("id").description(ID_DESC).attributes(key("constraints").value("Optional")),
             fieldWithPath("subdomain").description(SUBDOMAIN_DESC).attributes(key("constraints").value("Required")),
@@ -262,7 +260,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("config.idpDiscoveryEnabled").description(IDP_DISCOVERY_ENABLED_FLAG).attributes(key("constraints").value("Optional")),
             fieldWithPath("config.accountChooserEnabled").description(ACCOUNT_CHOOSER_ENABLED_FLAG).attributes(key("constraints").value("Optional")),
             fieldWithPath("config.issuer").description(ZONE_ISSUER_DESC).attributes(key("constraints").value("Optional")),
-            fieldWithPath("config.defaultIdentityProvider").type(STRING).description(DEFAULT_IDP_DESC).optional().attributes(key("constraints").value("Optional")),
 
             fieldWithPath("config.branding.companyName").description(BRANDING_COMPANY_NAME_DESC).attributes(key("constraints").value("Optional")),
             fieldWithPath("config.branding.productLogo").description(BRANDING_PRODUCT_LOGO_DESC).attributes(key("constraints").value("Optional")),
@@ -372,6 +369,8 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("[].description").description(DESCRIPTION_DESC),
             fieldWithPath("[].version").description(VERSION_DESC),
 
+            //TODO Spring RestDocs - throws error if we have null and strings as return and mark it STRING
+            //https://github.com/spring-projects/spring-restdocs/issues/398
             fieldWithPath("[].config.tokenPolicy.activeKeyId").optional().type(VARIES).description(ACTIVE_KEY_ID_DESC),
             fieldWithPath("[].config.tokenPolicy.accessTokenValidity").description(ACCESS_TOKEN_VALIDITY_DESC),
             fieldWithPath("[].config.tokenPolicy.refreshTokenValidity").description(REFRESH_TOKEN_VALIDITY_DESC),
@@ -745,7 +744,6 @@ public class IdentityZoneEndpointDocs extends InjectedMockContextTest {
             fieldWithPath("config.prompts[].type").description(PROMPTS_TYPE_DESC),
             fieldWithPath("config.prompts[].text").description(PROMPTS_TEXT_DESC),
 
-            fieldWithPath("config.defaultIdentityProvider").type(STRING).description(DEFAULT_IDP_DESC).optional().attributes(key("constraints").value("Optional")),
             fieldWithPath("config.idpDiscoveryEnabled").description(IDP_DISCOVERY_ENABLED_FLAG),
             fieldWithPath("config.accountChooserEnabled").description(ACCOUNT_CHOOSER_ENABLED_FLAG),
             fieldWithPath("config.issuer").description(ZONE_ISSUER_DESC),

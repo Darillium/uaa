@@ -46,8 +46,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.singletonList;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_AUTHORIZATION_CODE;
-import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_IMPLICIT;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_JWT_BEARER;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_REFRESH_TOKEN;
 import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYPE_SAML2_BEARER;
@@ -58,8 +56,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -111,7 +109,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         map.put("id", clientId);
         map.put("secret", "bar");
         map.put("scope", "openid");
-        map.put("authorized-grant-types", GRANT_TYPE_AUTHORIZATION_CODE);
+        map.put("authorized-grant-types", "authorization_code");
         map.put("authorities", "uaa.none");
         map.put("redirect-uri", "http://localhost/callback");
         return map;
@@ -175,7 +173,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         map.put("id", "foo");
         map.put("secret", "bar");
         map.put("scope", "openid");
-        map.put("authorized-grant-types", GRANT_TYPE_AUTHORIZATION_CODE);
+        map.put("authorized-grant-types", "authorization_code");
         map.put("authorities", "uaa.none");
         doSimpleTest(map);
     }
@@ -186,7 +184,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         map.put("id", "foo");
         map.put("secret", "bar");
         map.put("scope", "openid");
-        map.put("authorized-grant-types", GRANT_TYPE_IMPLICIT);
+        map.put("authorized-grant-types", "implicit");
         map.put("authorities", "uaa.none");
         doSimpleTest(map);
     }
@@ -211,7 +209,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         map.put("id", "foo");
         map.put("secret", "bar");
         map.put("scope", "openid");
-        map.put("authorized-grant-types", GRANT_TYPE_AUTHORIZATION_CODE);
+        map.put("authorized-grant-types", "authorization_code");
         map.put("authorities", "uaa.none");
         map.put("signup_redirect_url", "callback_url");
         ClientDetails clientDetails = doSimpleTest(map);
@@ -244,7 +242,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         map.put("id", "foo");
         map.put("secret", "bar");
         map.put("scope", "openid");
-        map.put("authorized-grant-types", GRANT_TYPE_AUTHORIZATION_CODE);
+        map.put("authorized-grant-types", "authorization_code");
         map.put("authorities", "uaa.none");
         map.put("signup_redirect_url", "callback_url");
         map.put("change_email_redirect_url", "change_email_url");
@@ -261,7 +259,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         map.put("id", "foo");
         map.put("secret", "bar");
         map.put("scope", "openid");
-        map.put("authorized-grant-types", GRANT_TYPE_AUTHORIZATION_CODE);
+        map.put("authorized-grant-types", "authorization_code");
         map.put("authorities", "uaa.none");
         map.put("change_email_redirect_url", "change_email_callback_url");
         ClientDetails created = doSimpleTest(map);
@@ -465,7 +463,7 @@ public class ClientAdminBootstrapTests extends JdbcTestBase {
         assertSet((String) map.get("resource-ids"), new HashSet(Arrays.asList("none")), created.getResourceIds(), String.class);
 
         String authTypes = (String) map.get("authorized-grant-types");
-        if (authTypes!=null && authTypes.contains(GRANT_TYPE_AUTHORIZATION_CODE)) {
+        if (authTypes!=null && authTypes.contains("authorization_code")) {
             authTypes+=",refresh_token";
         }
         assertSet(authTypes, Collections.emptySet(), created.getAuthorizedGrantTypes(), String.class);
