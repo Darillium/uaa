@@ -1,0 +1,12 @@
+version: "3"
+services:
+ 
+ uaa:
+  image: darilliumgalaxy/uaa/fix/4.19.0:latest
+  environment:
+   - CATALINA_OPTS=-Dspring.profiles.active=default
+   - UAA_CONFIG_FILE=/config/uaa-in-memory-asgard.yml
+  ports:
+   - "8080:8080"
+  volumes:
+   - ./config:/config
