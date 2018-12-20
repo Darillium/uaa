@@ -49,11 +49,13 @@
 #create database uaa;
 #create user root with superuser password 'changeme';
 
+#  url: jdbc:mysql://uaa_mysql_1:3306/uaa
+
 database:
   driverClassName: org.mariadb.jdbc.Driver
-  url: jdbc:mysql://uaa_mysql_1:3306/uaa
-  username: root
-  password: root
+  url: jdbc:mysql://${MYSQL_HOST}:3306/uaa
+  username: ${MYSQL_USER}
+  password: ${MYSQL_PWD}
 
 #mysql commands that were run
 #create database uaa;

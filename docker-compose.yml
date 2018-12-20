@@ -11,6 +11,9 @@ services:
         reservations:
           memory: 2048M
     environment:
+    - MYSQL_HOST=uaa_mysql_1
+    - MYSQL_USER=root
+    - MYSQL_PWD=root
     - CATALINA_OPTS=-Dspring.profiles.active=default,mysql
     - UAA_CONFIG_FILE=/config/uaa-mysql-asgard.yml
     ports:
