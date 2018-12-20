@@ -4,25 +4,15 @@ services:
     image: darilliumgalaxy/uaa:latest
     depends_on: 
     - mysql
-    deploy:
-      resources:
-        limits:
-          memory: 8192M
-        reservations:
-          memory: 2048M
-    environment:
-    - MYSQL_HOST=uaa_mysql_1
-    - MYSQL_USER=root
-    - MYSQL_PWD=root
-    - CATALINA_OPTS=-Dspring.profiles.active=default,mysql
-    - UAA_CONFIG_FILE=/config/uaa-mysql-asgard.yml
+    env_file:
+    - .env
     ports:
     - 8080:8080
     volumes:
     - ./config:/config
   mysql:
     image: mysql/mysql-server:5.7.8 
+    env_file:
+    - .env
     ports:
     - 3306:3306
-    environment:
-    - MYSQL_ROOT_PASSWORD=root
