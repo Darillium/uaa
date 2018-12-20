@@ -51,9 +51,9 @@
 
 database:
   driverClassName: org.mariadb.jdbc.Driver
-  url: jdbc:mysql://35.227.18.222:3306/uaa
+  url: jdbc:mysql://uaa_mysql_1:3306/uaa
   username: root
-  password: SFGdkg6^SE
+  password: root
 
 #mysql commands that were run
 #create database uaa;
