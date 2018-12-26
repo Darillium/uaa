@@ -16,3 +16,12 @@ services:
     - .env
     ports:
     - 3306:3306
+  mongodb:
+    image: mongo:latest
+    ports:
+    - 27017:27017
+  asgard:
+    image: darilliumgalaxy/asgard:latest 
+    ports:
+    - 9090:9090
+    

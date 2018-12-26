@@ -2,6 +2,7 @@
 # if any of these exist:
 # [$UAA_CONFIG_URL, $UAA_CONFIG_PATH/uaa.yml, $CLOUD_FOUNDRY_CONFIG_PATH/uaa.yml]
 
+spring_profiles: mysql,default
 #spring_profiles: mysql,default,ldap
 #spring_profiles: postgresql,default
 #spring_profiles: ldap,default,hsqldb
@@ -49,11 +50,16 @@
 #create database uaa;
 #create user root with superuser password 'changeme';
 
-#  url: jdbc:mysql://uaa_mysql_1:3306/uaa
+# https://mariadb.com/kb/en/library/about-mariadb-connector-j/
+#%> openssl pkcs12 -export -in client-cert.pem  -inkey client-key.pem   -out gcp-PKCS-12.p12 
+#%> keytool -importkeystore -deststorepass darillium -destkeystore  gcp-pkcs12.jks -srckeystore gcp-PKCS-12.p12 -srcstoretype PKCS12
 
 database:
   driverClassName: org.mariadb.jdbc.Driver
-  url: jdbc:mysql://${MYSQL_HOST}:3306/uaa
+#  url: jdbc:mysql://35.227.18.222:3306/uaa?ssl-mode=REQUIRED,ssl-ca=/usr/local/tomcat/gcp_certs/server-ca.pem,ssl-cert=/usr/local/tomcat/gcp_certs/client-cert.pem,ssl-key=/usr/local/tomcat/gcp_certs/client-key.pem
+#  url: jdbc:mysql://35.227.18.222:3306/uaa?useSSL=true&serverSslCert=/usr/local/tomcat/gcp_certs/2/server-ca.pem&keyStore=/usr/local/tomcat/gcp_certs/2/gcp.jks&keyStorePassword=darillium&keyPassword=darillium&disableSslHostnameVerification=true
+#  url: jdbc:mysql://35.227.18.222:3306/uaa?useSSL=true&serverSslCert=${cert_path}/server-ca.pem&keyStore=${cert_path}/gcp-pkcs12.jks&keyStorePassword=darillium&keyPassword=darillium&disableSslHostnameVerification=true
+  url: jdbc:mysql://${MYSQL_HOST}:3306/${MYSQL_DB}?useSSL=true&serverSslCert=${MYSQL_SSL_SERVER_CERT}&keyStore=${MYSQL_SSL_KEYSTORE}&keyStorePassword=${MYSQL_SSL_KEYSTORE_PASSWD}&keyPassword=${MYSQL_SSL_KEY_PASSWD}&disableSslHostnameVerification=true
   username: ${MYSQL_USER}
   password: ${MYSQL_PWD}
 
@@ -199,7 +205,7 @@ oauth:
   clients:
     asgard:
       id: asgard
-      secret: asgard
+      secret: ${UAA_ASGARD_CLIENT_SECRET}
       authorized-grant-types: client_credentials,refresh_token,password,client_credentials,authorization_code
       authorities: uaa.resource,clients.read,clients.secret,clients.write,uaa.admin,clients.admin,scim.write,scim.read,password.write
       scope: cloud_controller.read,password.write,scim.userids,cloud_controller.write,openid,organizations.acme
