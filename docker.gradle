@@ -54,6 +54,7 @@ task createDockerfile(type: Dockerfile) {
   instruction 'RUN bash -c "rm -r /usr/local/tomcat/webapps/docs"'
   instruction 'ADD cloudfoundry-identity-uaa-' + version + '.war /usr/local/tomcat/webapps/uaa.war'
   instruction 'ADD uaa.yml /uaa/uaa.yml'
+  instruction 'ADD ./config /uaa/config'
   instruction 'RUN bash -c "echo $LOGIN_CONFIG_URL"'
   instruction 'EXPOSE 8080'
 }
@@ -67,7 +68,7 @@ task copyContainerFiles(type: Copy) {
   from 'uaa/build/libs'
   from 'uaa/build/resources/main/tomcat-server.xml'
   from 'uaa/build/resources/main/uaa.yml'
-  from 'configs'
+  from 'config'
   into 'build/docker'
 }
 
