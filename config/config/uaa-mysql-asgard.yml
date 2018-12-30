@@ -56,7 +56,6 @@ spring_profiles: mysql,default
 
 database:
   driverClassName: org.mariadb.jdbc.Driver
-#  url: jdbc:mysql://35.227.18.222:3306/uaa?ssl-mode=REQUIRED,ssl-ca=/usr/local/tomcat/gcp_certs/server-ca.pem,ssl-cert=/usr/local/tomcat/gcp_certs/client-cert.pem,ssl-key=/usr/local/tomcat/gcp_certs/client-key.pem
 #  url: jdbc:mysql://35.227.18.222:3306/uaa?useSSL=true&serverSslCert=/usr/local/tomcat/gcp_certs/2/server-ca.pem&keyStore=/usr/local/tomcat/gcp_certs/2/gcp.jks&keyStorePassword=darillium&keyPassword=darillium&disableSslHostnameVerification=true
 #  url: jdbc:mysql://35.227.18.222:3306/uaa?useSSL=true&serverSslCert=${cert_path}/server-ca.pem&keyStore=${cert_path}/gcp-pkcs12.jks&keyStorePassword=darillium&keyPassword=darillium&disableSslHostnameVerification=true
   url: jdbc:mysql://${MYSQL_HOST}:3306/${MYSQL_DB}?useSSL=true&serverSslCert=${MYSQL_SSL_SERVER_CERT}&keyStore=${MYSQL_SSL_KEYSTORE}&keyStorePassword=${MYSQL_SSL_KEYSTORE_PASSWD}&keyPassword=${MYSQL_SSL_KEY_PASSWD}&disableSslHostnameVerification=true
@@ -205,7 +204,7 @@ oauth:
   clients:
     asgard:
       id: asgard
-      secret: ${UAA_ASGARD_CLIENT_SECRET}
+      secret: ku61jrpg56w
       authorized-grant-types: client_credentials,refresh_token,password,client_credentials,authorization_code
       authorities: uaa.resource,clients.read,clients.secret,clients.write,uaa.admin,clients.admin,scim.write,scim.read,password.write
       scope: cloud_controller.read,password.write,scim.userids,cloud_controller.write,openid,organizations.acme
